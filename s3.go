@@ -59,10 +59,10 @@ var NewS3Service = func(bucketName string, awsRegion string, prefix string) (Cac
 }
 
 func (s *s3Service) ListAndDelete() ([]string, error) {
-	mK := maxKeys
 	out, err := s.svc.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket:  &s.bucketName,
-		MaxKeys: &mK,
+		Bucket:  aws.String(s.bucketName),
+		Prefix:  aws.String(s.prefix),
+		MaxKeys: aws.Int64(maxKeys),
 	})
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 
 	if *out.KeyCount > 0 {
 		_, err = s.svc.DeleteObjects(&s3.DeleteObjectsInput{
-			Bucket: &s.bucketName,
+			Bucket: aws.String(s.bucketName),
 			Delete: &s3.Delete{
 				Objects: ids,
 			},
@@ -96,18 +96,19 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 }
 
 func (s *s3Service) Put(obj string) error {
-	uuid := fmt.Sprintf("%v/%v_%v", s.prefix, string(time.Now().UnixNano()), uuid.New())
+	uuid := fmt.Sprintf("%v/%v_%v", s.prefix, time.Now().UnixNano(), uuid.New())
 	_, err := s.svc.PutObject(&s3.PutObjectInput{
-		Bucket: &s.bucketName,
+		Bucket: aws.String(s.bucketName),
 		Body:   strings.NewReader(obj),
-		Key:    &uuid})
+		Key:    aws.String(uuid),
+	})
 	return err
 }
 
 func (s *s3Service) Get(key string) (string, error) {
 	val, err := s.svc.GetObject(&s3.GetObjectInput{
-		Bucket: &s.bucketName,
-		Key:    &key,
+		Bucket: aws.String(s.bucketName),
+		Key:    aws.String(key),
 	})
 	if err != nil {
 		return "", err

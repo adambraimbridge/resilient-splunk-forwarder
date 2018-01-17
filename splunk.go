@@ -23,8 +23,9 @@ const (
 )
 
 var (
-	request_count metrics.Counter
-	error_count   metrics.Counter
+	request_count   metrics.Counter
+	error_count     metrics.Counter
+	discarded_count metrics.Counter
 )
 
 type Forwarder interface {
@@ -71,6 +72,7 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 				if r.StatusCode != 400 {
 					err = errors.New(r.Status)
 				} else {
+					discarded_count.Inc(1)
 					logrus.Printf("Discarding malformed message\n")
 				}
 			}
@@ -100,4 +102,5 @@ func initMetrics(config appConfig) {
 func splunkMetrics() {
 	request_count = metrics.GetOrRegisterCounter("splunk_requests_total", metrics.DefaultRegistry)
 	error_count = metrics.GetOrRegisterCounter("splunk_requests_error", metrics.DefaultRegistry)
+	discarded_count = metrics.GetOrRegisterCounter("splunk_requests_discarded", metrics.DefaultRegistry)
 }
