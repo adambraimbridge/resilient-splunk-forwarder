@@ -59,7 +59,7 @@ func main() {
 		Name:   "url",
 		Value:  "",
 		Desc:   "The url to forward to",
-		EnvVar: "FWD_URL",
+		EnvVar: "FORWARDER_URL",
 	})
 	env := app.String(cli.StringOpt{
 		Name:   "env",
