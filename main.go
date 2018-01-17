@@ -107,7 +107,7 @@ func main() {
 		Name:   "bucketName",
 		Value:  "",
 		Desc:   "S3 bucket for caching failed events",
-		EnvVar: "BUCKET",
+		EnvVar: "BUCKET_NAME",
 	})
 	awsRegion := app.String(cli.StringOpt{
 		Name:   "awsRegion",
