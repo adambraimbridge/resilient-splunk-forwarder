@@ -1,0 +1,5 @@
+# Values used for the deployed application.
+service:
+  name: resilient-splunk-forwarder
+env:
+  ENV_VAR_1: "value1"
