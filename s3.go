@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pborman/uuid"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -115,7 +116,6 @@ func (s *s3Service) Get(key string) (string, error) {
 	}
 
 	defer val.Body.Close()
-	buf := make([]byte, *val.ContentLength)
-	val.Body.Read(buf)
-	return string(buf), nil
+	buf, err := ioutil.ReadAll(val.Body)
+	return string(buf), err
 }
