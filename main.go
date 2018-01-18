@@ -31,7 +31,6 @@ type appConfig struct {
 	token          string
 	bucket         string
 	awsRegion      string
-	prefix         string
 }
 
 func main() {
@@ -115,12 +114,6 @@ func main() {
 		Desc:   "AWS region for S3",
 		EnvVar: "AWS_REGION",
 	})
-	prefix := app.String(cli.StringOpt{
-		Name:   "prefix",
-		Value:  "global",
-		Desc:   "S3 id prefix for this instance",
-		EnvVar: "PREFIX",
-	})
 
 	config := appConfig{
 		appSystemCode:  *appSystemCode,
@@ -136,7 +129,6 @@ func main() {
 		token:          *token,
 		bucket:         *bucket,
 		awsRegion:      *awsRegion,
-		prefix:         *prefix,
 	}
 
 	logrus.SetLevel(logrus.InfoLevel)
@@ -154,7 +146,7 @@ func main() {
 		logrus.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
 		defer logrus.Printf("Resilient Splunk forwarder: Stopped\n")
 
-		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.prefix)
+		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.env)
 		splunkForwarder := NewSplunkForwarder(config)
 		logProcessor := NewLogProcessor(splunkForwarder, s3, config)
 
