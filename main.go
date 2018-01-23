@@ -138,12 +138,6 @@ func main() {
 
 	app.Action = func() {
 		logrus.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
-
-		go func() {
-			serveEndpoints(*appSystemCode, *appName, *port)
-		}()
-
-		logrus.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
 		defer logrus.Printf("Resilient Splunk forwarder: Stopped\n")
 
 		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.env)
@@ -151,6 +145,45 @@ func main() {
 		logProcessor := NewLogProcessor(splunkForwarder, s3, config)
 
 		logProcessor.Start()
+
+		healthService := newHealthService(
+			&healthConfig{appSystemCode: *appSystemCode, appName: *appName, port: *port},
+			[]health.Check{
+				{
+					BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
+					Name:             "Splunk healthcheck",
+					PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+					Severity:         1,
+					TechnicalSummary: "Latest request to Splunk HEC has returned an error - check journal file",
+					Checker: func() (string, error) {
+						err := splunkForwarder.getHealth()
+						if err != nil {
+							return "Splunk is not healthy", err
+						}
+						return "Splunk is healthy", nil
+					},
+				},
+				{
+					BusinessImpact:   "Logs can not be read from S3 and will probably be indexed with delay",
+					Name:             "S3 healthcheck",
+					PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+					Severity:         1,
+					TechnicalSummary: "Latest request to S3 has returned an error - check journal file",
+					Checker: func() (string, error) {
+						err := splunkForwarder.getHealth()
+						if err != nil {
+							return "S3 is not healthy", err
+						}
+						return "S3 is healthy", nil
+					},
+				},
+			},
+		)
+		go func() {
+			serveEndpoints(healthService, *appSystemCode, *appName, *port)
+		}()
+
+		logrus.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
 		waitForSignal()
 	}
 	err := app.Run(os.Args)
@@ -160,8 +193,7 @@ func main() {
 	}
 }
 
-func serveEndpoints(appSystemCode string, appName string, port string) {
-	healthService := newHealthService(&healthConfig{appSystemCode: appSystemCode, appName: appName, port: port})
+func serveEndpoints(healthService *healthService, appSystemCode string, appName string, port string) {
 
 	serveMux := http.NewServeMux()
 

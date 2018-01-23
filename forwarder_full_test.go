@@ -57,15 +57,23 @@ type s3ServiceMock struct {
 var splunk = splunkMock{}
 
 func (s3 *s3ServiceMock) ListAndDelete() ([]string, error) {
+	s3.Lock()
 	items := s3.cache
 	s3.cache = make([]string, 0)
+	s3.Unlock()
 	return items, nil
 }
 
 func (s3 *s3ServiceMock) Put(obj string) error {
 	obj = strings.Replace(obj, "retry", "safe", -1)
 	obj = strings.Replace(obj, "error", "retry", -1)
+	s3.Lock()
 	s3.cache = append(s3.cache, obj)
+	s3.Unlock()
+	return nil
+}
+
+func (s3 *s3ServiceMock) getHealth() error {
 	return nil
 }
 

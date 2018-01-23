@@ -17,14 +17,16 @@ import (
 const maxKeys = int64(100)
 
 type Cache interface {
+	Healthy
 	ListAndDelete() ([]string, error)
 	Put(obj string) error
 }
 
 type s3Service struct {
-	bucketName string
-	prefix     string
-	svc        *s3.S3
+	bucketName  string
+	prefix      string
+	svc         *s3.S3
+	latestError error
 }
 
 var NewS3Service = func(bucketName string, awsRegion string, prefix string) (Cache, error) {
@@ -56,7 +58,7 @@ var NewS3Service = func(bucketName string, awsRegion string, prefix string) (Cac
 		return nil, err
 	}
 	svc := s3.New(sess)
-	return &s3Service{bucketName, prefix, svc}, nil
+	return &s3Service{bucketName: bucketName, prefix: prefix, svc: svc}, nil
 }
 
 func (s *s3Service) ListAndDelete() ([]string, error) {
@@ -68,6 +70,7 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.latestError = err
 	ids := []*s3.ObjectIdentifier{}
 	vals := []string{}
 	for _, obj := range out.Contents {
@@ -75,6 +78,7 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 
 		val, err := s.Get(*obj.Key)
 		if err != nil {
+			// don't capture latest error in case another instance has deleted them first
 			return nil, err
 		}
 
@@ -89,8 +93,10 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 			},
 		})
 		if err != nil {
+			// don't capture latest error in case another instance has deleted them first
 			return nil, err
 		}
+		s.latestError = err
 		return vals, nil
 	}
 	return nil, nil
@@ -103,6 +109,7 @@ func (s *s3Service) Put(obj string) error {
 		Body:   strings.NewReader(obj),
 		Key:    aws.String(uuid),
 	})
+	s.latestError = err
 	return err
 }
 
@@ -118,4 +125,8 @@ func (s *s3Service) Get(key string) (string, error) {
 	defer val.Body.Close()
 	buf, err := ioutil.ReadAll(val.Body)
 	return string(buf), err
+}
+
+func (s *s3Service) getHealth() error {
+	return s.latestError
 }

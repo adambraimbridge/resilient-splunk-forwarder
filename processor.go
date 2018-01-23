@@ -26,6 +26,7 @@ type LogProcessor interface {
 }
 
 type logProcessor struct {
+	sync.Mutex
 	forwarder  Forwarder
 	cache      Cache
 	stopped    bool
@@ -37,25 +38,25 @@ type logProcessor struct {
 }
 
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
-	return &logProcessor{forwarder, cache, false, nil, nil, sync.WaitGroup{}, config.chanBuffer, config.workers}
+	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
 }
 
-func (logRetry *logProcessor) Start() {
+func (logProcessor *logProcessor) Start() {
 	mutex := sync.Mutex{}
 	level := 0
 	levelUp := false
 
-	logRetry.outChan = make(chan string, logRetry.chanBuffer)
+	logProcessor.outChan = make(chan string, logProcessor.chanBuffer)
 
-	for i := 0; i < logRetry.workers; i++ {
-		logRetry.wg.Add(1)
+	for i := 0; i < logProcessor.workers; i++ {
+		logProcessor.wg.Add(1)
 		go func() {
-			defer logRetry.wg.Done()
-			for msg := range logRetry.outChan {
-				logRetry.forwarder.forward(msg, func(s string, err error) {
+			defer logProcessor.wg.Done()
+			for msg := range logProcessor.outChan {
+				logProcessor.forwarder.forward(msg, func(s string, err error) {
 					if err != nil {
 						// cache again and retry later
-						logRetry.Enqueue(s)
+						logProcessor.Enqueue(s)
 					} else {
 					}
 					mutex.Lock()
@@ -68,13 +69,13 @@ func (logRetry *logProcessor) Start() {
 		}()
 	}
 
-	logRetry.inChan = make(chan string, logRetry.chanBuffer)
-	for i := 0; i < logRetry.workers; i++ {
-		logRetry.wg.Add(1)
+	logProcessor.inChan = make(chan string, logProcessor.chanBuffer)
+	for i := 0; i < logProcessor.workers; i++ {
+		logProcessor.wg.Add(1)
 		go func() {
-			defer logRetry.wg.Done()
-			for msg := range logRetry.inChan {
-				err := logRetry.cache.Put(msg)
+			defer logProcessor.wg.Done()
+			for msg := range logProcessor.inChan {
+				err := logProcessor.cache.Put(msg)
 				if err != nil {
 					log.Printf("Unexpected error when caching messages: %v\n", err)
 				}
@@ -83,8 +84,10 @@ func (logRetry *logProcessor) Start() {
 	}
 
 	go func() {
-		for !logRetry.stopped {
-			entries, err := logRetry.Dequeue()
+		logProcessor.wg.Add(1)
+		defer logProcessor.wg.Done()
+		for !logProcessor.isStopped() {
+			entries, err := logProcessor.Dequeue()
 			if err != nil {
 				log.Printf("Failure retrieving logs from S3 %v\n", err)
 			} else if len(entries) > 0 {
@@ -111,7 +114,7 @@ func (logRetry *logProcessor) Start() {
 				t := metrics.GetOrRegisterTimer("post.queue.latency", metrics.DefaultRegistry)
 				t.Time(func() {
 					log.Printf("Sending document to channel")
-					logRetry.outChan <- entry
+					logProcessor.outChan <- entry
 				})
 			}
 
@@ -123,18 +126,25 @@ func (logRetry *logProcessor) Start() {
 	}()
 }
 
-func (logRetry *logProcessor) Stop() {
-	logRetry.stopped = true
-	close(logRetry.outChan)
-	close(logRetry.inChan)
+func (logProcessor *logProcessor) Stop() {
+	logProcessor.Lock()
+	logProcessor.stopped = true
+	logProcessor.Unlock()
 	log.Printf("Waiting buffered channel consumer to finish processing messages\n")
-	logRetry.wg.Wait()
+	logProcessor.wg.Wait()
+	close(logProcessor.outChan)
+	close(logProcessor.inChan)
 }
 
-func (logRetry *logProcessor) Enqueue(s string) {
-	logRetry.inChan <- s
+func (logProcessor *logProcessor) Enqueue(s string) {
+	logProcessor.inChan <- s
 }
 
-func (logRetry *logProcessor) Dequeue() ([]string, error) {
-	return logRetry.cache.ListAndDelete()
+func (logProcessor *logProcessor) Dequeue() ([]string, error) {
+	return logProcessor.cache.ListAndDelete()
+}
+func (logProcessor *logProcessor) isStopped() bool {
+	logProcessor.Lock()
+	defer logProcessor.Unlock()
+	return logProcessor.stopped
 }

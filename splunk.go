@@ -15,6 +15,7 @@ import (
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/rcrowley/go-metrics"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 const (
@@ -29,12 +30,15 @@ var (
 )
 
 type Forwarder interface {
+	Healthy
 	forward(s string, callback func(string, error))
 }
 
 type splunkClient struct {
-	config appConfig
-	client *http.Client
+	sync.Mutex
+	config      appConfig
+	client      *http.Client
+	latestError error
 }
 
 func NewSplunkForwarder(config appConfig) Forwarder {
@@ -77,9 +81,22 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 				}
 			}
 		}
+		splunk.setHealth(err)
 		callback(s, err)
 	})
 
+}
+
+func (splunk *splunkClient) getHealth() error {
+	splunk.Lock()
+	defer splunk.Unlock()
+	return splunk.latestError
+}
+
+func (splunk *splunkClient) setHealth(err error) {
+	splunk.Lock()
+	splunk.latestError = err
+	splunk.Unlock()
 }
 
 func initMetrics(config appConfig) {

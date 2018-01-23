@@ -18,28 +18,13 @@ type healthConfig struct {
 	port          string
 }
 
-func newHealthService(config *healthConfig) *healthService {
-	service := &healthService{config: config}
-	service.checks = []health.Check{
-		service.sampleCheck(),
-	}
+type Healthy interface {
+	getHealth() error
+}
+
+func newHealthService(config *healthConfig, checks []health.Check) *healthService {
+	service := &healthService{config: config, checks: checks}
 	return service
-}
-
-func (service *healthService) sampleCheck() health.Check {
-	return health.Check{
-		BusinessImpact:   "Sample healthcheck has no impact",
-		Name:             "Sample healthcheck",
-		PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
-		Severity:         1,
-		TechnicalSummary: "Sample healthcheck has no technical details",
-		Checker:          service.sampleChecker,
-	}
-}
-
-func (service *healthService) sampleChecker() (string, error) {
-	return "Sample is healthy", nil
-
 }
 
 func (service *healthService) GTG() gtg.Status {
