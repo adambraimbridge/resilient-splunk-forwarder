@@ -100,7 +100,7 @@ func (splunk *splunkClient) setHealth(err error) {
 }
 
 func initMetrics(config appConfig) {
-	graphiteNamespace := strings.Join([]string{graphitePrefix, config.env, graphitePostfix, config.hostname}, ".")
+	graphiteNamespace := strings.Join([]string{graphitePrefix, config.env, graphitePostfix}, ".")
 	// graphiteNamespace ~ prefix.env.postfix.hostname
 	logrus.Printf("%v namespace: %v\n", config.graphiteServer, graphiteNamespace)
 	if config.dryrun {

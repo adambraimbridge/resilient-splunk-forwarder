@@ -27,7 +27,6 @@ type appConfig struct {
 	dryrun         bool
 	workers        int
 	chanBuffer     int
-	hostname       string
 	token          string
 	bucket         string
 	awsRegion      string
@@ -90,12 +89,6 @@ func main() {
 		Desc:   "Channel buffer size",
 		EnvVar: "CHAN_BUFFER",
 	})
-	hostname := app.String(cli.StringOpt{
-		Name:   "hostname",
-		Value:  "",
-		Desc:   "Hostname running the service. If empty Go is trying to resolve the hostname.",
-		EnvVar: "HOSTNAME",
-	})
 	token := app.String(cli.StringOpt{
 		Name:   "token",
 		Value:  "",
@@ -125,7 +118,6 @@ func main() {
 		dryrun:         *dryrun,
 		workers:        *workers,
 		chanBuffer:     *chanBuffer,
-		hostname:       *hostname,
 		token:          *token,
 		bucket:         *bucket,
 		awsRegion:      *awsRegion,
@@ -244,14 +236,6 @@ func validateParams(config appConfig) {
 	if len(config.token) == 0 { //Check whether -token parameter value was provided
 		logrus.Printf("Splunk token must be provided\n")
 		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
-	}
-	if len(config.hostname) == 0 { //Check whether -hostname parameter was provided. If not attempt to resolve
-		hname, err := os.Hostname() //host name reported by the kernel, used for graphiteNamespace
-		if err != nil {
-			logrus.Println(err)
-			hname = "unkownhost" //Set host name as unkownhost if hostname resolution fail
-		}
-		config.hostname = hname
 	}
 	if len(config.bucket) == 0 { //Check whether -bucket parameter value was provided
 		logrus.Printf("S3 bucket name must be provided\n")

@@ -109,7 +109,6 @@ func TestMain(m *testing.M) {
 	config.dryrun = false
 	config.workers = 8
 	config.chanBuffer = 256
-	config.hostname = ""
 	config.token = "secret"
 	config.bucket = "testbucket"
 

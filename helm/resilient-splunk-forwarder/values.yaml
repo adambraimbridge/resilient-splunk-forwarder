@@ -4,7 +4,7 @@
 service:
   name: "" # The name of the service, should be defined in the specific app-configs folder.
   hasHealthcheck: "true"
-replicaCount: 2
+replicaCount: 1
 image:
   repository: coco/resilient-splunk-forwarder
   version: "" # should be set explicitly at installation
@@ -12,5 +12,9 @@ image:
 resources:
   limits:
     memory: 256Mi
+  request:
+    memory: 50Mi
 env:
-  ENV_VAR_1: "default value"
+  WORKERS: "8"
+  CHAN_BUFFER: "256"
+  GRAPHITE_SERVER: "graphite.ft.com:2003"

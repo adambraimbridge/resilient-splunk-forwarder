@@ -23,18 +23,37 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
-        - name: ENV_VAR_1
-          value: {{ .Values.env.ENV_VAR_1 }}
-        - name: ENV_VAR_WITH_VALUE_IN_CONFIG_MAP
+        - name: WORKERS
+          value: "{{ .Values.env.WORKERS }}"
+        - name: CHAN_BUFFER
+          value: "{{ .Values.env.CHAN_BUFFER }}"
+        - name: GRAPHITE_SERVER
+          value: "{{ .Values.env.GRAPHITE_SERVER }}"
+        - name: BUCKET_NAME
           valueFrom:
             configMapKeyRef:
               name: global-config
-              key: key.for.configmap.entry
-        - name: ENV_VAR_WITH_VALUE_IN_SECRET_MAP
+              key: splunk.forwarder.s3.bucket
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: global-config
+              key: splunk.forwarder.aws.region
+        - name: ENV
+          valueFrom:
+            configMapKeyRef:
+              name: global-config
+              key: environment
+        - name: FORWARD_URL
+          valueFrom:
+            configMapKeyRef:
+              name: splunk-forwarder
+              key: hec.url
+        - name: TOKEN
           valueFrom:
             secretKeyRef:
-              name: global-secrets
-              key: key.for.secret.entry
+              name: splunk-forwarder
+              key: hec.token
         ports:
         - containerPort: 8080
         livenessProbe:
