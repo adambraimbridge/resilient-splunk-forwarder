@@ -46,7 +46,7 @@ spec:
               key: environment
         - name: FORWARD_URL
           valueFrom:
-            configMapKeyRef:
+            secretKeyRef:
               name: splunk-forwarder
               key: hec.url
         - name: TOKEN
