@@ -12,7 +12,7 @@ image:
 resources:
   limits:
     memory: 256Mi
-  request:
+  requests:
     memory: 50Mi
 env:
   WORKERS: "8"
