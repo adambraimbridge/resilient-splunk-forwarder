@@ -30,6 +30,8 @@ type appConfig struct {
 	token          string
 	bucket         string
 	awsRegion      string
+	awsAccessKey   string
+	awsSecretKey   string
 }
 
 func main() {
@@ -108,6 +110,19 @@ func main() {
 		EnvVar: "AWS_REGION",
 	})
 
+	// these values are picked up by the aws sdk from the env vars
+	// they are only mentioned here for validation purposes
+	awsAccessKey := app.String(cli.StringOpt{
+		Name:   "awsAccessKey",
+		Desc:   "AWS Access Key for S3",
+		EnvVar: "AWS_ACCESS_KEY_ID",
+	})
+	awsSecretAccessKey := app.String(cli.StringOpt{
+		Name:   "awsSecretAccessKey",
+		Desc:   "AWS secret access key for S3",
+		EnvVar: "AWS_SECRET_ACCESS_KEY",
+	})
+
 	config := appConfig{
 		appSystemCode:  *appSystemCode,
 		appName:        *appName,
@@ -121,6 +136,8 @@ func main() {
 		token:          *token,
 		bucket:         *bucket,
 		awsRegion:      *awsRegion,
+		awsAccessKey:   *awsAccessKey,
+		awsSecretKey:   *awsSecretAccessKey,
 	}
 
 	logrus.SetLevel(logrus.InfoLevel)
@@ -241,4 +258,9 @@ func validateParams(config appConfig) {
 		logrus.Printf("S3 bucket name must be provided\n")
 		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
 	}
+	if len(config.awsSecretKey) == 0 || len(config.awsAccessKey) == 0 {
+		logrus.Printf("S3 is unreachable, access keys are not provided\n")
+		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
+	}
+
 }
