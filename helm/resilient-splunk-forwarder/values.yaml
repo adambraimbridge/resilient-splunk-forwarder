@@ -15,6 +15,6 @@ resources:
   requests:
     memory: 50Mi
 env:
-  WORKERS: "8"
+  WORKERS: "20"
   CHAN_BUFFER: "256"
   GRAPHITE_SERVER: "graphite.ft.com:2003"
