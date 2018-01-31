@@ -106,7 +106,6 @@ func TestMain(m *testing.M) {
 	config.env = "dummy"
 	graphiteURL, _ := url.Parse(graphiteTestServer.URL)
 	config.graphiteServer = fmt.Sprintf("%v:%v", graphiteURL.Hostname(), graphiteURL.Port())
-	config.dryrun = false
 	config.workers = 8
 	config.chanBuffer = 256
 	config.token = "secret"
