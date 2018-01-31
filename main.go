@@ -24,7 +24,6 @@ type appConfig struct {
 	fwdURL         string
 	env            string
 	graphiteServer string
-	dryrun         bool
 	workers        int
 	chanBuffer     int
 	token          string
@@ -72,12 +71,6 @@ func main() {
 		Value:  "graphite.ft.com:2003",
 		Desc:   "Graphite server host name and port",
 		EnvVar: "GRAPHITE_SERVER",
-	})
-	dryrun := app.Bool(cli.BoolOpt{
-		Name:   "dryrun",
-		Value:  false,
-		Desc:   "Dryrun true disables network connectivity. Use it for testing offline. Default value false",
-		EnvVar: "DRYRUN",
 	})
 	workers := app.Int(cli.IntOpt{
 		Name:   "workers",
@@ -130,7 +123,6 @@ func main() {
 		fwdURL:         *fwdURL,
 		env:            *env,
 		graphiteServer: *graphiteServer,
-		dryrun:         *dryrun,
 		workers:        *workers,
 		chanBuffer:     *chanBuffer,
 		token:          *token,
@@ -143,10 +135,9 @@ func main() {
 	logrus.SetLevel(logrus.InfoLevel)
 	logrus.Infof("[Startup] resilient-splunk-forwarder is starting ")
 
-	validateParams(config)
-
 	app.Action = func() {
 		logrus.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
+		validateParams(config)
 		defer logrus.Printf("Resilient Splunk forwarder: Stopped\n")
 
 		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.env)
@@ -179,7 +170,7 @@ func main() {
 					Severity:         1,
 					TechnicalSummary: "Latest request to S3 has returned an error - check journal file",
 					Checker: func() (string, error) {
-						err := splunkForwarder.getHealth()
+						err := s3.getHealth()
 						if err != nil {
 							return "S3 is not healthy", err
 						}

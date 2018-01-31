@@ -103,15 +103,12 @@ func initMetrics(config appConfig) {
 	graphiteNamespace := strings.Join([]string{graphitePrefix, config.env, graphitePostfix}, ".")
 	// graphiteNamespace ~ prefix.env.postfix.hostname
 	logrus.Printf("%v namespace: %v\n", config.graphiteServer, graphiteNamespace)
-	if config.dryrun {
-		logrus.Printf("Dryrun enabled, not connecting to %v\n", config.graphiteServer)
-	} else {
-		addr, err := net.ResolveTCPAddr("tcp", config.graphiteServer)
-		if err != nil {
-			logrus.Println(err)
-		}
-		go graphite.Graphite(metrics.DefaultRegistry, 5*time.Second, graphiteNamespace, addr)
+	addr, err := net.ResolveTCPAddr("tcp", config.graphiteServer)
+	if err != nil {
+		logrus.Println(err)
 	}
+	go graphite.Graphite(metrics.DefaultRegistry, 5*time.Second, graphiteNamespace, addr)
+
 	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stdout, "metrics ", log.Lmicroseconds))
 	splunkMetrics()
 }
