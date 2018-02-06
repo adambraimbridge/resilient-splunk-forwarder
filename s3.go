@@ -74,16 +74,31 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 	s.latestError = err
 	ids := []*s3.ObjectIdentifier{}
 	vals := []string{}
+	mutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	getErr := error(nil)
 	for _, obj := range out.Contents {
 		ids = append(ids, &s3.ObjectIdentifier{Key: obj.Key})
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			val, err := s.Get(*obj.Key)
+			if err != nil {
+				// don't capture latest error in case another instance has deleted them first
+				mutex.Lock()
+				getErr = err
+				mutex.Unlock()
+				return
+			}
 
-		val, err := s.Get(*obj.Key)
-		if err != nil {
-		// don't capture latest error in case another instance has deleted them first
-		return nil, err
-		}
-
-		vals = append(vals, val)
+			mutex.Lock()
+			vals = append(vals, val)
+			mutex.Unlock()
+		}()
+	}
+	wg.Wait()
+	if getErr != nil {
+		return nil, getErr
 	}
 
 	if *out.KeyCount > 0 {
