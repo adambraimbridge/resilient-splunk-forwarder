@@ -80,9 +80,9 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 	for _, obj := range out.Contents {
 		ids = append(ids, &s3.ObjectIdentifier{Key: obj.Key})
 		wg.Add(1)
-		go func() {
+		go func(o s3.Object) {
 			defer wg.Done()
-			val, err := s.Get(*obj.Key)
+			val, err := s.Get(*o.Key)
 			if err != nil {
 				// don't capture latest error in case another instance has deleted them first
 				mutex.Lock()
@@ -94,7 +94,7 @@ func (s *s3Service) ListAndDelete() ([]string, error) {
 			mutex.Lock()
 			vals = append(vals, val)
 			mutex.Unlock()
-		}()
+		}(*obj)
 	}
 	wg.Wait()
 	if getErr != nil {
