@@ -46,6 +46,18 @@ func TestMain(m *testing.M) {
 	config.token = "secret"
 	config.bucket = "testbucket"
 
+	os.Setenv("TOKEN", config.token)
+	os.Setenv("BUCKET_NAME", config.bucket)
+	os.Setenv("AWS_REGION", "eu")
+	os.Setenv("AWS_ACCESS_KEY_ID", "accessKey")
+	os.Setenv("FORWARDER_URL", config.fwdURL)
+
+	app := initApp()
+
+	go func() {
+		app.Run(os.Args)
+	}()
+
 	os.Exit(m.Run())
 }
 
