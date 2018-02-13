@@ -1,12 +1,6 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httptest"
-
-	"fmt"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -14,8 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-var config appConfig
 
 const messageCount = 100
 
@@ -77,48 +69,10 @@ func (s3 *s3ServiceMock) getHealth() error {
 	return nil
 }
 
-func TestMain(m *testing.M) {
-
-	splunkTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bytes := make([]byte, r.ContentLength)
-		r.Body.Read(bytes)
-		defer r.Body.Close()
-		body := string(bytes)
-		if strings.Contains(body, "simulated_retry") {
-			splunk.incErrors()
-			w.WriteHeader(http.StatusServiceUnavailable)
-		} else {
-			splunk.append(body)
-			w.WriteHeader(http.StatusOK)
-		}
-	}))
-
-	defer splunkTestServer.Close()
-
-	graphiteTestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	defer graphiteTestServer.Close()
-
-	config = appConfig{}
-	config.fwdURL = splunkTestServer.URL
-	config.env = "dummy"
-	graphiteURL, _ := url.Parse(graphiteTestServer.URL)
-	config.graphiteServer = fmt.Sprintf("%v:%v", graphiteURL.Hostname(), graphiteURL.Port())
-	config.workers = 8
-	config.chanBuffer = 256
-	config.token = "secret"
-	config.bucket = "testbucket"
-
-	os.Exit(m.Run())
-}
-
 func Test_Forwarder(t *testing.T) {
-
 	s3 := &s3ServiceMock{}
-	splunkForwarder := NewSplunkForwarder(config)
-	logProcessor := NewLogProcessor(splunkForwarder, s3, config)
+	splunkForwarder := NewSplunkForwarder(mainConfig)
+	logProcessor := NewLogProcessor(splunkForwarder, s3, mainConfig)
 	go func() {
 		logProcessor.Start()
 	}()
@@ -133,7 +87,12 @@ func Test_Forwarder(t *testing.T) {
 
 	time.Sleep(3 * time.Second)
 
+	go func() {
+		logProcessor.Stop()
+	}()
+
 	assert.Equal(t, messageCount, len(splunk.getIndex()))
 	assert.Equal(t, 1, splunk.getErrorCount())
+	assert.Equal(t, nil, splunkForwarder.getHealth())
 	assert.Contains(t, strings.Join(splunk.getIndex(), ""), "simulated_safe")
 }

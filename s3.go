@@ -23,10 +23,17 @@ type Cache interface {
 	Put(obj string) error
 }
 
+type s3Interface interface {
+	ListObjectsV2(input *s3.ListObjectsV2Input) (*s3.ListObjectsV2Output, error)
+	DeleteObjects(input *s3.DeleteObjectsInput) (*s3.DeleteObjectsOutput, error)
+	PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error)
+	GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error)
+}
+
 type s3Service struct {
 	bucketName  string
 	prefix      string
-	svc         *s3.S3
+	svc         s3Interface
 	latestError error
 }
 
