@@ -25,7 +25,7 @@ func (splunk *splunkClientMock) forward(s string, callback func(string, error)) 
 func Test_Processor(t *testing.T) {
 	s3 := &s3ServiceMock{}
 	splunkForwarderMock := &splunkClientMock{}
-	logProcessor := NewLogProcessor(splunkForwarderMock, s3, mainConfig)
+	logProcessor := NewLogProcessor(splunkForwarderMock, s3, config)
 	go func() {
 		logProcessor.Start()
 	}()

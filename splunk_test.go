@@ -71,8 +71,8 @@ func (s3 *s3ServiceMock) getHealth() error {
 
 func Test_Forwarder(t *testing.T) {
 	s3 := &s3ServiceMock{}
-	splunkForwarder := NewSplunkForwarder(mainConfig)
-	logProcessor := NewLogProcessor(splunkForwarder, s3, mainConfig)
+	splunkForwarder := NewSplunkForwarder(config)
+	logProcessor := NewLogProcessor(splunkForwarder, s3, config)
 	go func() {
 		logProcessor.Start()
 	}()

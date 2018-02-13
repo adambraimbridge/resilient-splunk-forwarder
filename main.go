@@ -34,15 +34,6 @@ type appConfig struct {
 }
 
 func main() {
-	app := initApp()
-	err := app.Run(os.Args)
-	if err != nil {
-		logrus.Errorf("App could not start, error=[%s]\n", err)
-		return
-	}
-}
-
-func initApp() *cli.Cli {
 	app := cli.App("resilient-splunk-forwarder", appDescription)
 
 	appSystemCode := app.String(cli.StringOpt{
@@ -195,8 +186,11 @@ func initApp() *cli.Cli {
 		logrus.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
 		waitForSignal()
 	}
-
-	return app
+	err := app.Run(os.Args)
+	if err != nil {
+		logrus.Errorf("App could not start, error=[%s]\n", err)
+		return
+	}
 }
 
 func serveEndpoints(healthService *healthService, appSystemCode string, appName string, port string) {
