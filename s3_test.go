@@ -1,13 +1,13 @@
 package main
 
 import (
-	"testing"
+	"bytes"
+	"errors"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"errors"
-	"bytes"
 	"io/ioutil"
+	"testing"
 )
 
 type mockS3Interface struct {

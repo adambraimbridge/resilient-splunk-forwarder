@@ -207,7 +207,7 @@ func serveEndpoints(healthService *healthService, appSystemCode string, appName 
 		HealthCheck: health.HealthCheck{
 			SystemCode: appSystemCode,
 			Name:       appName, Description: appDescription,
-			Checks:     healthService.checks},
+			Checks: healthService.checks},
 		Timeout: 10 * time.Second,
 	}
 	serveMux.HandleFunc(healthPath, health.Handler(hc))

@@ -1,14 +1,13 @@
 package main
 
 import (
-	//"errors"
+	"errors"
+	health "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/service-status-go/httphandlers"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	health "github.com/Financial-Times/go-fthealth/v1_1"
-	"errors"
 )
 
 func TestGTGUnhealthyCluster(t *testing.T) {

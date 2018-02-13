@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/pkg/errors"
+	"net/http"
 	"testing"
 	"time"
-	"net/http"
-	"github.com/pkg/errors"
 )
 
 type splunkClientMock struct {

@@ -1,14 +1,14 @@
 package main
 
 import (
-	"testing"
-	"net/http/httptest"
-	"strings"
-	"net/url"
 	"fmt"
-	"os"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
 	"os/exec"
+	"strings"
+	"testing"
 )
 
 var config appConfig
