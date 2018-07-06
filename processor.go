@@ -57,13 +57,13 @@ func (logProcessor *logProcessor) Start() {
 					if err != nil {
 						// cache again and retry later
 						logProcessor.Enqueue(s)
-					} else {
+
+						mutex.Lock()
+						if level < maxBackoff {
+							levelUp = true
+						}
+						mutex.Unlock()
 					}
-					mutex.Lock()
-					if err != nil && level < maxBackoff {
-						levelUp = true
-					}
-					mutex.Unlock()
 				})
 			}
 		}()
