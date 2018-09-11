@@ -12,10 +12,14 @@ import (
 	"strings"
 	"time"
 
+	prom "github.com/deathowl/go-metrics-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+
+	"sync"
+
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/rcrowley/go-metrics"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 const (
@@ -111,6 +115,10 @@ func initMetrics(config appConfig) {
 
 	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stdout, "metrics ", log.Lmicroseconds))
 	splunkMetrics()
+
+	prometheusRegistry := prometheus.NewRegistry()
+	pClient := prom.NewPrometheusProvider(metrics.DefaultRegistry, graphiteNamespace, "prom", prometheusRegistry, 5*time.Second)
+	go pClient.UpdatePrometheusMetrics()
 }
 
 func splunkMetrics() {
