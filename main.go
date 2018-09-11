@@ -13,6 +13,7 @@ import (
 
 	health "github.com/Financial-Times/go-fthealth/v1_1"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const appDescription = "Forwards logs cached in S3 to Splunk"
@@ -213,6 +214,7 @@ func serveEndpoints(healthService *healthService, appSystemCode string, appName 
 	serveMux.HandleFunc(healthPath, health.Handler(hc))
 	serveMux.HandleFunc(status.GTGPath, status.NewGoodToGoHandler(healthService.GTG))
 	serveMux.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
+	serveMux.Handle("/metrics", promhttp.Handler())
 
 	server := &http.Server{Addr: ":" + port, Handler: serveMux}
 
