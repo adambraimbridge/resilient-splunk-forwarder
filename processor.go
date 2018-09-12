@@ -1,11 +1,13 @@
 package main
 
 import (
-	"github.com/rcrowley/go-metrics"
 	"log"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -37,7 +39,22 @@ type logProcessor struct {
 	workers    int
 }
 
+var (
+	queueLatency prometheus.Observer
+)
+
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
+	ql := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "upp",
+			Subsystem: "splunk_forwarder",
+			Name:      "queue_latency",
+			Help:      "Post queue latency",
+		},
+		[]string{"environment"},
+	)
+
+	queueLatency = ql.With(prometheus.Labels{"environment": config.env})
 	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
 }
 
@@ -110,12 +127,13 @@ func (logProcessor *logProcessor) Start() {
 					log.Printf("Sleeping for %v\n", sleepDuration)
 					time.Sleep(sleepDuration)
 				}
-
 				t := metrics.GetOrRegisterTimer("post.queue.latency", metrics.DefaultRegistry)
+				prometeusTimer := prometheus.NewTimer(queueLatency)
 				t.Time(func() {
 					log.Printf("Sending document to channel")
 					logProcessor.outChan <- entry
 				})
+				prometeusTimer.ObserveDuration()
 			}
 
 			// don't overwhelm S3 when it's empty
