@@ -116,8 +116,7 @@ func initMetrics(config appConfig) {
 	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stdout, "metrics ", log.Lmicroseconds))
 	splunkMetrics()
 
-	prometheusRegistry := prometheus.NewRegistry()
-	pClient := prom.NewPrometheusProvider(metrics.DefaultRegistry, graphiteNamespace, "prom", prometheusRegistry, 5*time.Second)
+	pClient := prom.NewPrometheusProvider(metrics.DefaultRegistry, graphiteNamespace, "prom", prometheus.DefaultRegisterer, 5*time.Second)
 	go pClient.UpdatePrometheusMetrics()
 }
 
