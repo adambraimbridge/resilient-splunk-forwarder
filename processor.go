@@ -54,6 +54,7 @@ func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProc
 		[]string{"environment"},
 	)
 
+	prometheus.Register(ql)
 	queueLatency = ql.With(prometheus.Labels{"environment": config.env})
 	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
 }
