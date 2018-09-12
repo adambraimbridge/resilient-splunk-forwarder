@@ -30,9 +30,9 @@ var (
 	request_count    metrics.Counter
 	error_count      metrics.Counter
 	discarded_count  metrics.Counter
-	requestCounter   *prometheus.CounterVec
-	errorCounter     *prometheus.CounterVec
-	discardedCounter *prometheus.CounterVec
+	requestCounter   prometheus.Counter
+	errorCounter     prometheus.Counter
+	discardedCounter prometheus.Counter
 	envLabel         prometheus.Labels
 )
 
@@ -70,24 +70,24 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 		tokenWithKeyword := strings.Join([]string{"Splunk", splunk.config.token}, " ") //join strings "Splunk" and value of -token argument
 		req.Header.Set("Authorization", tokenWithKeyword)
 		request_count.Inc(1)
-		requestCounter.With(envLabel).Inc()
+		requestCounter.Inc()
 		r, err := splunk.client.Do(req)
 		if err != nil {
 			error_count.Inc(1)
-			errorCounter.With(envLabel).Inc()
+			errorCounter.Inc()
 			logrus.Println(err)
 		} else {
 			defer r.Body.Close()
 			io.Copy(ioutil.Discard, r.Body)
 			if r.StatusCode != 200 {
 				error_count.Inc(1)
-				errorCounter.With(envLabel).Inc()
+				errorCounter.Inc()
 				logrus.Printf("Unexpected status code %v (%v) when sending %v to %v\n", r.StatusCode, r.Status, s, splunk.config.fwdURL)
 				if r.StatusCode != 400 {
 					err = errors.New(r.Status)
 				} else {
 					discarded_count.Inc(1)
-					discardedCounter.With(envLabel).Inc()
+					discardedCounter.Inc()
 					logrus.Printf("Discarding malformed message\n")
 				}
 			}
@@ -126,7 +126,7 @@ func initMetrics(config appConfig) {
 
 func splunkMetrics() {
 
-	requestCounter = prometheus.NewCounterVec(
+	rc := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "upp",
 			Subsystem: "splunk_forwarder",
@@ -136,9 +136,10 @@ func splunkMetrics() {
 		[]string{
 			"environment",
 		})
-	prometheus.MustRegister(requestCounter)
+	prometheus.MustRegister(rc)
+	requestCounter = rc.With(envLabel)
 
-	errorCounter = prometheus.NewCounterVec(
+	ec := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "upp",
 			Subsystem: "splunk_forwarder",
@@ -149,9 +150,10 @@ func splunkMetrics() {
 			"environment",
 		})
 
-	prometheus.MustRegister(errorCounter)
+	prometheus.MustRegister(ec)
+	errorCounter = ec.With(envLabel)
 
-	discardedCounter = prometheus.NewCounterVec(
+	dc := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "upp",
 			Subsystem: "splunk_forwarder",
@@ -161,7 +163,8 @@ func splunkMetrics() {
 		[]string{
 			"environment",
 		})
-	prometheus.MustRegister(discardedCounter)
+	prometheus.MustRegister(dc)
+	discardedCounter = dc.With(envLabel)
 
 	request_count = metrics.GetOrRegisterCounter("splunk_requests_total", metrics.DefaultRegistry)
 	error_count = metrics.GetOrRegisterCounter("splunk_requests_error", metrics.DefaultRegistry)
