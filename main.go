@@ -161,9 +161,9 @@ func initApp() *cli.Cli {
 		defer logrus.Printf("Resilient Splunk forwarder: Stopped\n")
 
 		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.env)
+		envLabel = prometheus.Labels{"environment": config.env}
 		splunkForwarder := NewSplunkForwarder(config)
 		logProcessor := NewLogProcessor(splunkForwarder, s3, config)
-		envLabel = prometheus.Labels{"environment": config.env}
 
 		logProcessor.Start()
 
