@@ -44,18 +44,7 @@ var (
 )
 
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
-	ql := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Namespace: "upp",
-			Subsystem: "splunk_forwarder",
-			Name:      "queue_latency",
-			Help:      "Post queue latency",
-			Buckets:   []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006},
-		},
-		[]string{"environment"},
-	)
-	prometheus.Register(ql)
-	queueLatency = ql.With(prometheus.Labels{"environment": config.env})
+	queueLatency = registerHistogram("queue_latency", "Post queue latency", []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006})
 	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
 }
 

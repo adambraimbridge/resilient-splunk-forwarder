@@ -33,7 +33,6 @@ var (
 	requestCounter   prometheus.Counter
 	errorCounter     prometheus.Counter
 	discardedCounter prometheus.Counter
-	envLabel         prometheus.Labels
 	postTime         prometheus.Observer
 )
 
@@ -123,64 +122,14 @@ func initMetrics(config appConfig) {
 	}
 	go graphite.Graphite(metrics.DefaultRegistry, 5*time.Second, graphiteNamespace, addr)
 	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stdout, "metrics ", log.Lmicroseconds))
-	envLabel = prometheus.Labels{"environment": config.env}
 	splunkMetrics()
 }
 
 func splunkMetrics() {
-
-	rc := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "upp",
-			Subsystem: "splunk_forwarder",
-			Name:      "request_count",
-			Help:      "Number of requests to splunk",
-		},
-		[]string{
-			"environment",
-		})
-	prometheus.MustRegister(rc)
-	requestCounter = rc.With(envLabel)
-
-	ec := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "upp",
-			Subsystem: "splunk_forwarder",
-			Name:      "error_count",
-			Help:      "Number of errors connecting to splunk",
-		},
-		[]string{
-			"environment",
-		})
-
-	prometheus.MustRegister(ec)
-	errorCounter = ec.With(envLabel)
-
-	dc := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "upp",
-			Subsystem: "splunk_forwarder",
-			Name:      "discarded_count",
-			Help:      "Number of discarded messages",
-		},
-		[]string{
-			"environment",
-		})
-	prometheus.MustRegister(dc)
-	discardedCounter = dc.With(envLabel)
-
-	pt := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Namespace: "upp",
-			Subsystem: "splunk_forwarder",
-			Name:      "post_time",
-			Help:      "HTTP Post time",
-			Buckets:   []float64{.002, .003, .0035, .004, .0045, .005, .006, .007, .008, .009},
-		},
-		[]string{"environment"},
-	)
-	prometheus.Register(pt)
-	postTime = pt.With(envLabel)
+	postTime = registerHistogram("post_time", "HTTP Post time", []float64{.002, .003, .0035, .004, .0045, .005, .006, .007, .008, .009})
+	errorCounter = registerCounter("error_count", "Number of errors connecting to splunk")
+	requestCounter = registerCounter("request_count", "Number of requests to splunk")
+	discardedCounter = registerCounter("discarded_count", "Number of discarded messages")
 
 	request_count = metrics.GetOrRegisterCounter("splunk_requests_total", metrics.DefaultRegistry)
 	error_count = metrics.GetOrRegisterCounter("splunk_requests_error", metrics.DefaultRegistry)

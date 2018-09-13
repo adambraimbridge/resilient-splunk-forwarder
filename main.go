@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/jawher/mow.cli"
 	"github.com/sirupsen/logrus"
 
@@ -17,6 +19,14 @@ import (
 )
 
 const appDescription = "Forwards logs cached in S3 to Splunk"
+
+const (
+	namespace = "upp"
+	subsystem = "splunk_forwarder"
+)
+
+var labelNames = []string{"environment"}
+var envLabel prometheus.Labels
 
 type appConfig struct {
 	appSystemCode  string
@@ -153,6 +163,7 @@ func initApp() *cli.Cli {
 		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.env)
 		splunkForwarder := NewSplunkForwarder(config)
 		logProcessor := NewLogProcessor(splunkForwarder, s3, config)
+		envLabel = prometheus.Labels{"environment": config.env}
 
 		logProcessor.Start()
 
@@ -262,4 +273,38 @@ func validateParams(config appConfig) {
 		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
 	}
 
+}
+
+func registerCounter(name, help string) prometheus.Counter {
+	c := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      name,
+			Help:      help,
+		},
+		labelNames)
+	prometheus.MustRegister(c)
+	if envLabel == nil {
+		envLabel = prometheus.Labels{"environment": "dummy"}
+	}
+	return c.With(envLabel)
+}
+
+func registerHistogram(name, help string, buckets []float64) prometheus.Observer {
+	h := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      name,
+			Help:      help,
+			Buckets:   buckets,
+		},
+		labelNames,
+	)
+	prometheus.Register(h)
+	if envLabel == nil {
+		envLabel = prometheus.Labels{"environment": "dummy"}
+	}
+	return h.With(envLabel)
 }
