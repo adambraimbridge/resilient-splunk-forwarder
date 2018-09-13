@@ -175,7 +175,7 @@ func splunkMetrics() {
 			Subsystem: "splunk_forwarder",
 			Name:      "post_time",
 			Help:      "HTTP Post time",
-			Buckets:   []float64{.001, .002, .003, .0035, .004, .0045, .005, .006, .007, .008},
+			Buckets:   []float64{.002, .003, .0035, .004, .0045, .005, .006, .007, .008, .009},
 		},
 		[]string{"environment"},
 	)

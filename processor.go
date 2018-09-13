@@ -50,7 +50,7 @@ func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProc
 			Subsystem: "splunk_forwarder",
 			Name:      "queue_latency",
 			Help:      "Post queue latency",
-			Buckets:   []float64{.000005, .00001, .000015, .00002, .000025, .00003, .00004, .00005},
+			Buckets:   []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006},
 		},
 		[]string{"environment"},
 	)
