@@ -34,6 +34,7 @@ var (
 	errorCounter     prometheus.Counter
 	discardedCounter prometheus.Counter
 	envLabel         prometheus.Labels
+	postTime         prometheus.Observer
 )
 
 type Forwarder interface {
@@ -62,6 +63,11 @@ func NewSplunkForwarder(config appConfig) Forwarder {
 
 func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 	t := metrics.GetOrRegisterTimer("post.time", metrics.DefaultRegistry)
+	prometheusTimer := prometheus.NewTimer(prometheus.ObserverFunc(func(v float64) {
+		us := v * 1000000 // make microseconds
+		postTime.Observe(us)
+	}))
+	defer prometheusTimer.ObserveDuration()
 	t.Time(func() {
 		req, err := http.NewRequest("POST", splunk.config.fwdURL, strings.NewReader(s))
 		if err != nil {
@@ -165,6 +171,19 @@ func splunkMetrics() {
 		})
 	prometheus.MustRegister(dc)
 	discardedCounter = dc.With(envLabel)
+
+	pt := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "upp",
+			Subsystem: "splunk_forwarder",
+			Name:      "post_time",
+			Help:      "HTTP Post time",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"environment"},
+	)
+	prometheus.Register(pt)
+	postTime = pt.With(envLabel)
 
 	request_count = metrics.GetOrRegisterCounter("splunk_requests_total", metrics.DefaultRegistry)
 	error_count = metrics.GetOrRegisterCounter("splunk_requests_error", metrics.DefaultRegistry)
