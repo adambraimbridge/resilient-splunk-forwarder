@@ -44,13 +44,13 @@ var (
 )
 
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
-	ql := prometheus.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Namespace:  "upp",
-			Subsystem:  "splunk_forwarder",
-			Name:       "queue_latency",
-			Help:       "Post queue latency",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+	ql := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "upp",
+			Subsystem: "splunk_forwarder",
+			Name:      "queue_latency",
+			Help:      "Post queue latency",
+			Buckets:   prometheus.DefBuckets,
 		},
 		[]string{"environment"},
 	)
@@ -129,10 +129,7 @@ func (logProcessor *logProcessor) Start() {
 					time.Sleep(sleepDuration)
 				}
 				t := metrics.GetOrRegisterTimer("post.queue.latency", metrics.DefaultRegistry)
-				prometheusTimer := prometheus.NewTimer(prometheus.ObserverFunc(func(v float64) {
-					us := v * 1000000 // make microseconds
-					queueLatency.Observe(us)
-				}))
+				prometheusTimer := prometheus.NewTimer(queueLatency)
 				t.Time(func() {
 					log.Printf("Sending document to channel")
 					logProcessor.outChan <- entry

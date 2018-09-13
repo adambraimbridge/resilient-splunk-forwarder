@@ -63,10 +63,7 @@ func NewSplunkForwarder(config appConfig) Forwarder {
 
 func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 	t := metrics.GetOrRegisterTimer("post.time", metrics.DefaultRegistry)
-	prometheusTimer := prometheus.NewTimer(prometheus.ObserverFunc(func(v float64) {
-		us := v * 1000000 // make microseconds
-		postTime.Observe(us)
-	}))
+	prometheusTimer := prometheus.NewTimer(postTime)
 	defer prometheusTimer.ObserveDuration()
 	t.Time(func() {
 		req, err := http.NewRequest("POST", splunk.config.fwdURL, strings.NewReader(s))
