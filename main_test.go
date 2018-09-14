@@ -9,6 +9,10 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var config appConfig
@@ -83,4 +87,42 @@ func Test_failValidateParams(t *testing.T) {
 		return
 	}
 	t.Fatalf("Process ran with err %v, want exit status 1", err)
+}
+
+func Test_RegisterCounter(t *testing.T) {
+	name := "fooCounter"
+	help := "barDescription"
+	registerCounter(name, help)
+	duplicateCounter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      name,
+			Help:      help,
+		},
+		labelNames)
+
+	err := prometheus.Register(duplicateCounter)
+	assert.NotNil(t, err, "Counter should've been registered already.")
+	_, ok := err.(prometheus.AlreadyRegisteredError)
+	assert.True(t, ok, "Expecting an 'AlreadyRegisteredError'.")
+}
+
+func Test_RegisterHistogram(t *testing.T) {
+	name := "fooHistogram"
+	help := "barDescription"
+	registerHistogram(name, help, []float64{})
+	duplicateHistogram := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      name,
+			Help:      help,
+		},
+		labelNames)
+
+	err := prometheus.Register(duplicateHistogram)
+	assert.NotNil(t, err, "Histogram should've been registered already.")
+	_, ok := err.(prometheus.AlreadyRegisteredError)
+	assert.True(t, ok, "Expecting an 'AlreadyRegisteredError'.")
 }
