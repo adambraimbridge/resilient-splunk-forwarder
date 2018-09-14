@@ -24,8 +24,10 @@ const (
 	appDescription = "Forwards logs cached in S3 to Splunk"
 )
 
-var labelNames = []string{"environment"}
-var envLabel prometheus.Labels
+var (
+	labelNames = []string{"environment"}
+	envLabel   prometheus.Labels
+)
 
 type appConfig struct {
 	appSystemCode  string
