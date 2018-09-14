@@ -121,6 +121,7 @@ func initMetrics(config appConfig) {
 		logrus.Println(err)
 	}
 	go graphite.Graphite(metrics.DefaultRegistry, 5*time.Second, graphiteNamespace, addr)
+
 	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stdout, "metrics ", log.Lmicroseconds))
 	splunkMetrics()
 }

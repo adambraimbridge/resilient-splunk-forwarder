@@ -39,9 +39,7 @@ type logProcessor struct {
 	workers    int
 }
 
-var (
-	queueLatency prometheus.Observer
-)
+var queueLatency prometheus.Observer
 
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
 	queueLatency = registerHistogram("queue_latency", "Post queue latency", []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006})

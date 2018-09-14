@@ -18,11 +18,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const appDescription = "Forwards logs cached in S3 to Splunk"
-
 const (
-	namespace = "upp"
-	subsystem = "splunk_forwarder"
+	namespace      = "upp"
+	subsystem      = "splunk_forwarder"
+	appDescription = "Forwards logs cached in S3 to Splunk"
 )
 
 var labelNames = []string{"environment"}
@@ -300,8 +299,7 @@ func registerHistogram(name, help string, buckets []float64) prometheus.Observer
 			Help:      help,
 			Buckets:   buckets,
 		},
-		labelNames,
-	)
+		labelNames)
 	prometheus.Register(h)
 	if envLabel == nil {
 		envLabel = prometheus.Labels{"environment": "dummy"}
