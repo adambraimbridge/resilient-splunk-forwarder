@@ -42,7 +42,9 @@ type logProcessor struct {
 var queueLatency prometheus.Observer
 
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
-	queueLatency = registerHistogram("queue_latency", "Post queue latency", []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006})
+	if queueLatency != nil {
+		queueLatency = registerHistogram("queue_latency", "Post queue latency", []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006})
+	}
 	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
 }
 
