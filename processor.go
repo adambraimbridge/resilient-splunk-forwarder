@@ -1,11 +1,13 @@
 package main
 
 import (
-	"github.com/rcrowley/go-metrics"
 	"log"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -37,7 +39,12 @@ type logProcessor struct {
 	workers    int
 }
 
+var queueLatency prometheus.Observer
+
 func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProcessor {
+	if queueLatency == nil {
+		queueLatency = registerHistogram("queue_latency", "Post queue latency", []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006})
+	}
 	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
 }
 
@@ -110,12 +117,13 @@ func (logProcessor *logProcessor) Start() {
 					log.Printf("Sleeping for %v\n", sleepDuration)
 					time.Sleep(sleepDuration)
 				}
-
 				t := metrics.GetOrRegisterTimer("post.queue.latency", metrics.DefaultRegistry)
+				prometheusTimer := prometheus.NewTimer(queueLatency)
 				t.Time(func() {
 					log.Printf("Sending document to channel")
 					logProcessor.outChan <- entry
 				})
+				prometheusTimer.ObserveDuration()
 			}
 
 			// don't overwhelm S3 when it's empty

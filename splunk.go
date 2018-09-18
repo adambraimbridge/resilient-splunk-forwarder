@@ -12,10 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
+	"sync"
+
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/rcrowley/go-metrics"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 const (
@@ -24,9 +27,13 @@ const (
 )
 
 var (
-	request_count   metrics.Counter
-	error_count     metrics.Counter
-	discarded_count metrics.Counter
+	request_count    metrics.Counter
+	error_count      metrics.Counter
+	discarded_count  metrics.Counter
+	requestCounter   prometheus.Counter
+	errorCounter     prometheus.Counter
+	discardedCounter prometheus.Counter
+	postTime         prometheus.Observer
 )
 
 type Forwarder interface {
@@ -55,6 +62,8 @@ func NewSplunkForwarder(config appConfig) Forwarder {
 
 func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 	t := metrics.GetOrRegisterTimer("post.time", metrics.DefaultRegistry)
+	prometheusTimer := prometheus.NewTimer(postTime)
+	defer prometheusTimer.ObserveDuration()
 	t.Time(func() {
 		req, err := http.NewRequest("POST", splunk.config.fwdURL, strings.NewReader(s))
 		if err != nil {
@@ -63,20 +72,24 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 		tokenWithKeyword := strings.Join([]string{"Splunk", splunk.config.token}, " ") //join strings "Splunk" and value of -token argument
 		req.Header.Set("Authorization", tokenWithKeyword)
 		request_count.Inc(1)
+		requestCounter.Inc()
 		r, err := splunk.client.Do(req)
 		if err != nil {
 			error_count.Inc(1)
+			errorCounter.Inc()
 			logrus.Println(err)
 		} else {
 			defer r.Body.Close()
 			io.Copy(ioutil.Discard, r.Body)
 			if r.StatusCode != 200 {
 				error_count.Inc(1)
+				errorCounter.Inc()
 				logrus.Printf("Unexpected status code %v (%v) when sending %v to %v\n", r.StatusCode, r.Status, s, splunk.config.fwdURL)
 				if r.StatusCode != 400 {
 					err = errors.New(r.Status)
 				} else {
 					discarded_count.Inc(1)
+					discardedCounter.Inc()
 					logrus.Printf("Discarding malformed message\n")
 				}
 			}
@@ -114,6 +127,11 @@ func initMetrics(config appConfig) {
 }
 
 func splunkMetrics() {
+	postTime = registerHistogram("post_time", "HTTP Post time", []float64{.002, .003, .0035, .004, .0045, .005, .006, .007, .008, .009})
+	errorCounter = registerCounter("error_count", "Number of errors connecting to splunk")
+	requestCounter = registerCounter("request_count", "Number of requests to splunk")
+	discardedCounter = registerCounter("discarded_count", "Number of discarded messages")
+
 	request_count = metrics.GetOrRegisterCounter("splunk_requests_total", metrics.DefaultRegistry)
 	error_count = metrics.GetOrRegisterCounter("splunk_requests_error", metrics.DefaultRegistry)
 	discarded_count = metrics.GetOrRegisterCounter("splunk_requests_discarded", metrics.DefaultRegistry)
