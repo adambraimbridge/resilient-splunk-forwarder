@@ -17,7 +17,6 @@ resources:
 env:
   WORKERS: "20"
   CHAN_BUFFER: "256"
-  GRAPHITE_SERVER: "graphite.ft.com:2003"
 metrics:
   # where we expose the metrics for prometheus
   path: /metrics

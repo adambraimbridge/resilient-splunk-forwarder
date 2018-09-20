@@ -183,12 +183,6 @@
 			"revisionTime": "2018-03-21T16:47:47Z"
 		},
 		{
-			"checksumSHA1": "guo63XdLn1n7MtawdVcICjFNNBI=",
-			"path": "github.com/cyberdelia/go-metrics-graphite",
-			"revision": "39f87cc3b432bbb898d7c643c0e93cac2bc865ad",
-			"revisionTime": "2016-12-19T23:08:53Z"
-		},
-		{
 			"checksumSHA1": "DuEyF75v9xaKXfJsCPRdHNOpGZk=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
 			"path": "github.com/davecgh/go-spew/spew",
@@ -329,12 +323,6 @@
 			"path": "github.com/prometheus/procfs/xfs",
 			"revision": "05ee40e3a273f7245e8777337fc7b46e533a9a92",
 			"revisionTime": "2018-07-25T12:39:19Z"
-		},
-		{
-			"checksumSHA1": "DIjooF5+DLH5JSOjqnBlfNh9dFU=",
-			"path": "github.com/rcrowley/go-metrics",
-			"revision": "1f30fe9094a513ce4c700b9a54458bbb0c96996c",
-			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
 			"checksumSHA1": "RQn2haYRhM4g31hN8+pVopABTbI=",

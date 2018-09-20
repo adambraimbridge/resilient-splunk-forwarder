@@ -30,19 +30,18 @@ var (
 )
 
 type appConfig struct {
-	appSystemCode  string
-	appName        string
-	port           string
-	fwdURL         string
-	env            string
-	graphiteServer string
-	workers        int
-	chanBuffer     int
-	token          string
-	bucket         string
-	awsRegion      string
-	awsAccessKey   string
-	awsSecretKey   string
+	appSystemCode string
+	appName       string
+	port          string
+	fwdURL        string
+	env           string
+	workers       int
+	chanBuffer    int
+	token         string
+	bucket        string
+	awsRegion     string
+	awsAccessKey  string
+	awsSecretKey  string
 }
 
 func main() {
@@ -86,12 +85,6 @@ func initApp() *cli.Cli {
 		Value:  "dummy",
 		Desc:   "environment_tag value",
 		EnvVar: "ENV",
-	})
-	graphiteServer := app.String(cli.StringOpt{
-		Name:   "graphiteserver",
-		Value:  "graphite.ft.com:2003",
-		Desc:   "Graphite server host name and port",
-		EnvVar: "GRAPHITE_SERVER",
 	})
 	workers := app.Int(cli.IntOpt{
 		Name:   "workers",
@@ -138,19 +131,18 @@ func initApp() *cli.Cli {
 	})
 
 	config := appConfig{
-		appSystemCode:  *appSystemCode,
-		appName:        *appName,
-		port:           *port,
-		fwdURL:         *fwdURL,
-		env:            *env,
-		graphiteServer: *graphiteServer,
-		workers:        *workers,
-		chanBuffer:     *chanBuffer,
-		token:          *token,
-		bucket:         *bucket,
-		awsRegion:      *awsRegion,
-		awsAccessKey:   *awsAccessKey,
-		awsSecretKey:   *awsSecretAccessKey,
+		appSystemCode: *appSystemCode,
+		appName:       *appName,
+		port:          *port,
+		fwdURL:        *fwdURL,
+		env:           *env,
+		workers:       *workers,
+		chanBuffer:    *chanBuffer,
+		token:         *token,
+		bucket:        *bucket,
+		awsRegion:     *awsRegion,
+		awsAccessKey:  *awsAccessKey,
+		awsSecretKey:  *awsSecretAccessKey,
 	}
 
 	logrus.SetLevel(logrus.InfoLevel)

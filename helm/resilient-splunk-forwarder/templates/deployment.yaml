@@ -37,8 +37,6 @@ spec:
           value: "{{ .Values.env.WORKERS }}"
         - name: CHAN_BUFFER
           value: "{{ .Values.env.CHAN_BUFFER }}"
-        - name: GRAPHITE_SERVER
-          value: "{{ .Values.env.GRAPHITE_SERVER }}"
         - name: BUCKET_NAME
           valueFrom:
             configMapKeyRef:

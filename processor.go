@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -117,12 +116,9 @@ func (logProcessor *logProcessor) Start() {
 					log.Printf("Sleeping for %v\n", sleepDuration)
 					time.Sleep(sleepDuration)
 				}
-				t := metrics.GetOrRegisterTimer("post.queue.latency", metrics.DefaultRegistry)
+				log.Printf("Sending document to channel")
 				prometheusTimer := prometheus.NewTimer(queueLatency)
-				t.Time(func() {
-					log.Printf("Sending document to channel")
-					logProcessor.outChan <- entry
-				})
+				logProcessor.outChan <- entry
 				prometheusTimer.ObserveDuration()
 			}
 
