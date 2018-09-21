@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -43,8 +41,6 @@ func TestMain(m *testing.M) {
 	config = appConfig{}
 	config.fwdURL = splunkTestServer.URL
 	config.env = "dummy"
-	graphiteURL, _ := url.Parse(graphiteTestServer.URL)
-	config.graphiteServer = fmt.Sprintf("%v:%v", graphiteURL.Hostname(), graphiteURL.Port())
 	config.workers = 8
 	config.chanBuffer = 256
 	config.token = "secret"
