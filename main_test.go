@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Financial-Times/go-logger/v2"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -45,6 +46,7 @@ func TestMain(m *testing.M) {
 	config.chanBuffer = 256
 	config.token = "secret"
 	config.bucket = "testbucket"
+	config.UPPLogger = logger.NewUPPLogger("DEBUG", "app-system-code")
 
 	os.Setenv("TOKEN", config.token)
 	os.Setenv("BUCKET_NAME", config.bucket)
