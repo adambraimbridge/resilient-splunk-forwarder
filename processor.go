@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"math"
 	"sync"
 	"time"
 
+	"github.com/Financial-Times/go-logger/v2"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -36,6 +36,7 @@ type logProcessor struct {
 	wg         sync.WaitGroup
 	chanBuffer int
 	workers    int
+	uppLogger  *logger.UPPLogger
 }
 
 var queueLatency prometheus.Observer
@@ -44,7 +45,14 @@ func NewLogProcessor(forwarder Forwarder, cache Cache, config appConfig) LogProc
 	if queueLatency == nil {
 		queueLatency = registerHistogram("queue_latency", "Post queue latency", []float64{.00001, .000015, .00002, .000025, .00003, .00004, .00005, .00006})
 	}
-	return &logProcessor{forwarder: forwarder, cache: cache, wg: sync.WaitGroup{}, chanBuffer: config.chanBuffer, workers: config.workers}
+	return &logProcessor{
+		forwarder:  forwarder,
+		cache:      cache,
+		wg:         sync.WaitGroup{},
+		chanBuffer: config.chanBuffer,
+		workers:    config.workers,
+		uppLogger:  config.UPPLogger,
+	}
 }
 
 func (logProcessor *logProcessor) Start() {
@@ -83,7 +91,7 @@ func (logProcessor *logProcessor) Start() {
 			for msg := range logProcessor.inChan {
 				err := logProcessor.cache.Put(msg)
 				if err != nil {
-					log.Printf("Unexpected error when caching messages: %v\n", err)
+					logProcessor.uppLogger.Printf("Unexpected error when caching messages: %v\n", err)
 				}
 			}
 		}()
@@ -95,9 +103,9 @@ func (logProcessor *logProcessor) Start() {
 		for !logProcessor.isStopped() {
 			entries, err := logProcessor.Dequeue()
 			if err != nil {
-				log.Printf("Failure retrieving logs from S3 %v\n", err)
+				logProcessor.uppLogger.Printf("Failure retrieving logs from S3 %v\n", err)
 			} else if len(entries) > 0 {
-				log.Printf("Read %v messages from S3\n", len(entries))
+				logProcessor.uppLogger.Printf("Read %v messages from S3\n", len(entries))
 			}
 			for _, entry := range entries {
 				mutex.Lock()
@@ -113,10 +121,10 @@ func (logProcessor *logProcessor) Start() {
 				if level > 0 {
 					sleepDuration := time.Duration((0.2*math.Pow(2, float64(level))-0.2)*1000) * time.Millisecond
 
-					log.Printf("Sleeping for %v\n", sleepDuration)
+					logProcessor.uppLogger.Printf("Sleeping for %v\n", sleepDuration)
 					time.Sleep(sleepDuration)
 				}
-				log.Printf("Sending document to channel")
+				logProcessor.uppLogger.Printf("Sending document to channel")
 				prometheusTimer := prometheus.NewTimer(queueLatency)
 				logProcessor.outChan <- entry
 				prometheusTimer.ObserveDuration()
@@ -134,7 +142,7 @@ func (logProcessor *logProcessor) Stop() {
 	logProcessor.Lock()
 	logProcessor.stopped = true
 	logProcessor.Unlock()
-	log.Printf("Waiting buffered channel consumer to finish processing messages\n")
+	logProcessor.uppLogger.Printf("Waiting buffered channel consumer to finish processing messages\n")
 	logProcessor.wg.Wait()
 	close(logProcessor.outChan)
 	close(logProcessor.inChan)

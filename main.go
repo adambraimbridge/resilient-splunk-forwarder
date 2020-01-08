@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,9 +12,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/jawher/mow.cli"
-	"github.com/sirupsen/logrus"
 
 	health "github.com/Financial-Times/go-fthealth/v1_1"
+	"github.com/Financial-Times/go-logger/v2"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -42,13 +43,15 @@ type appConfig struct {
 	awsRegion     string
 	awsAccessKey  string
 	awsSecretKey  string
+	UPPLogger     *logger.UPPLogger
 }
 
 func main() {
+
 	app := initApp()
 	err := app.Run(os.Args)
 	if err != nil {
-		logrus.Errorf("App could not start, error=[%s]\n", err)
+		log.Fatalf("App could not start, error=[%s]\n", err)
 		return
 	}
 }
@@ -116,6 +119,12 @@ func initApp() *cli.Cli {
 		Desc:   "AWS region for S3",
 		EnvVar: "AWS_REGION",
 	})
+	logLevel := app.String(cli.StringOpt{
+		Name:   "logLevel",
+		Value:  "INFO",
+		Desc:   "Logging level (DEBUG, INFO, WARN, ERROR)",
+		EnvVar: "LOG_LEVEL",
+	})
 
 	// these values are picked up by the aws sdk from the env vars
 	// they are only mentioned here for validation purposes
@@ -143,25 +152,33 @@ func initApp() *cli.Cli {
 		awsRegion:     *awsRegion,
 		awsAccessKey:  *awsAccessKey,
 		awsSecretKey:  *awsSecretAccessKey,
+		UPPLogger:     logger.NewUPPLogger(*appSystemCode, *logLevel),
 	}
 
-	logrus.SetLevel(logrus.InfoLevel)
-	logrus.Infof("[Startup] resilient-splunk-forwarder is starting ")
+	config.UPPLogger.Infof("[Startup] resilient-splunk-forwarder is starting ")
 
 	app.Action = func() {
-		logrus.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
+		config.UPPLogger.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
 		validateParams(config)
-		defer logrus.Printf("Resilient Splunk forwarder: Stopped\n")
+		defer config.UPPLogger.Printf("Resilient Splunk forwarder: Stopped\n")
 
-		s3, _ := NewS3Service(config.bucket, config.awsRegion, config.env)
+		s3, err := NewS3Service(config.bucket, config.awsRegion, config.env)
+		if err != nil {
+			config.UPPLogger.Fatalf(err.Error())
+		}
 		envLabel = prometheus.Labels{"environment": config.env}
+
 		splunkForwarder := NewSplunkForwarder(config)
 		logProcessor := NewLogProcessor(splunkForwarder, s3, config)
 
 		logProcessor.Start()
 
 		healthService := newHealthService(
-			&healthConfig{appSystemCode: *appSystemCode, appName: *appName, port: *port},
+			&healthConfig{
+				appSystemCode: *appSystemCode,
+				appName:       *appName,
+				port:          *port,
+			},
 			[]health.Check{
 				{
 					BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
@@ -193,18 +210,19 @@ func initApp() *cli.Cli {
 				},
 			},
 		)
+
 		go func() {
-			serveEndpoints(healthService, *appSystemCode, *appName, *port)
+			serveEndpoints(healthService, *appSystemCode, *appName, *port, config.UPPLogger)
 		}()
 
-		logrus.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
+		config.UPPLogger.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
 		waitForSignal()
 	}
 
 	return app
 }
 
-func serveEndpoints(healthService *healthService, appSystemCode string, appName string, port string) {
+func serveEndpoints(healthService *healthService, appSystemCode string, appName string, port string, uppLogger *logger.UPPLogger) {
 
 	serveMux := http.NewServeMux()
 
@@ -220,50 +238,49 @@ func serveEndpoints(healthService *healthService, appSystemCode string, appName 
 	serveMux.HandleFunc(status.BuildInfoPath, status.BuildInfoHandler)
 	serveMux.Handle("/metrics", promhttp.Handler())
 
-	server := &http.Server{Addr: ":" + port, Handler: serveMux}
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: serveMux,
+	}
 
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
-			logrus.Infof("HTTP server closing with message: %v", err)
+			uppLogger.Infof("HTTP server closing with message: %v", err)
 		}
 		wg.Done()
 	}()
 
 	waitForSignal()
-	logrus.Infof("[Shutdown] resilient-splunk-forwarder is shutting down")
+	uppLogger.Infof("[Shutdown] resilient-splunk-forwarder is shutting down")
 
 	if err := server.Close(); err != nil {
-		logrus.Errorf("Unable to stop http server: %v", err)
+		uppLogger.Errorf("Unable to stop http server: %v", err)
 	}
 
 	wg.Wait()
 }
 
 func waitForSignal() {
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 }
 
 func validateParams(config appConfig) {
 	if len(config.fwdURL) == 0 { //Check whether -url parameter value was provided
-		logrus.Printf("Forwarder URL must be provided\n")
-		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
+		config.UPPLogger.Fatalf("Forwarder URL must be provided")
 	}
 	if len(config.token) == 0 { //Check whether -token parameter value was provided
-		logrus.Printf("Splunk token must be provided\n")
-		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
+		config.UPPLogger.Fatalf("Splunk token must be provided")
 	}
 	if len(config.bucket) == 0 { //Check whether -bucket parameter value was provided
-		logrus.Printf("S3 bucket name must be provided\n")
-		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
+		config.UPPLogger.Fatalf("S3 bucket name must be provided")
 	}
 	if len(config.awsSecretKey) == 0 || len(config.awsAccessKey) == 0 {
-		logrus.Printf("S3 is unreachable, access keys are not provided\n")
-		os.Exit(1) //If not fail visibly as we are unable to send logs to Splunk
+		config.UPPLogger.Fatalf("S3 is unreachable, access keys are not provided")
 	}
 
 }

@@ -77,4 +77,9 @@ However, due to having multiple workers, this will not affect messages that are 
 
 ### Logging
 
-* The application uses [logrus](https://github.com/Sirupsen/logrus); the log file is initialised in [main.go](main.go).
+- The application uses [go-logger v2](https://github.com/Financial-Times/go-logger/tree/v2); the log file is initialised in [main.go](main.go).
+- Logging requires an `env` app parameter, for all environments other than `local` logs are written to file.
+- When running locally, logs are written to console. If you want to log locally to file, you need to pass in an env
+parameter that is != `local`.
+- NOTE: `/__build-info` and `/__gtg` endpoints are not logged as they are called every second from varnish/vulcand
+and this information is not needed in logs/splunk.
