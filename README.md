@@ -7,22 +7,18 @@
 Forwards logs cached in S3 to Splunk
 
 ## Installation
-      
-Download the source code, dependencies and test dependencies:
 
-        go get -u github.com/kardianos/govendor
         go get -u github.com/Financial-Times/resilient-splunk-forwarder
         cd $GOPATH/src/github.com/Financial-Times/resilient-splunk-forwarder
-        govendor sync
-        go build .
+        go build -mod=readonly .
 
 ## Running locally
 
 1. Run the tests and install the binary:
 
-        govendor sync
-        govendor test -v -race
-        go install
+    ` go test -mod=readonly -race ./... `
+    ` ./resilent-splunk-forwarder `
+
 
 2. Run the binary (using the `help` flag to see the available optional arguments):
 
