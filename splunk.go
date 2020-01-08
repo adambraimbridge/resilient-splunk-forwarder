@@ -7,12 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/prometheus/client_golang/prometheus"
-
 	"sync"
 
-	"github.com/sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -43,7 +40,10 @@ func NewSplunkForwarder(config appConfig) Forwarder {
 	}
 	client := &http.Client{Transport: transport}
 
-	return &splunkClient{client: client, config: config}
+	return &splunkClient{
+		client: client,
+		config: config,
+	}
 }
 
 func (splunk *splunkClient) forward(s string, callback func(string, error)) {
@@ -52,7 +52,7 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 
 	req, err := http.NewRequest("POST", splunk.config.fwdURL, strings.NewReader(s))
 	if err != nil {
-		logrus.Println(err)
+		splunk.config.UPPLogger.Println(err)
 	}
 	tokenWithKeyword := strings.Join([]string{"Splunk", splunk.config.token}, " ") //join strings "Splunk" and value of -token argument
 	req.Header.Set("Authorization", tokenWithKeyword)
@@ -60,18 +60,18 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 	r, err := splunk.client.Do(req)
 	if err != nil {
 		errorCounter.Inc()
-		logrus.Println(err)
+		splunk.config.UPPLogger.Println(err)
 	} else {
 		defer r.Body.Close()
 		io.Copy(ioutil.Discard, r.Body)
 		if r.StatusCode != 200 {
 			errorCounter.Inc()
-			logrus.Printf("Unexpected status code %v (%v) when sending %v to %v\n", r.StatusCode, r.Status, s, splunk.config.fwdURL)
+			splunk.config.UPPLogger.Printf("Unexpected status code %v (%v) when sending %v to %v\n", r.StatusCode, r.Status, s, splunk.config.fwdURL)
 			if r.StatusCode != 400 {
 				err = errors.New(r.Status)
 			} else {
 				discardedCounter.Inc()
-				logrus.Printf("Discarding malformed message\n")
+				splunk.config.UPPLogger.Printf("Discarding malformed message\n")
 			}
 		}
 	}

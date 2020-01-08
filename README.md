@@ -7,22 +7,18 @@
 Forwards logs cached in S3 to Splunk
 
 ## Installation
-      
-Download the source code, dependencies and test dependencies:
 
-        go get -u github.com/kardianos/govendor
         go get -u github.com/Financial-Times/resilient-splunk-forwarder
         cd $GOPATH/src/github.com/Financial-Times/resilient-splunk-forwarder
-        govendor sync
-        go build .
+        go build -mod=readonly .
 
 ## Running locally
 
 1. Run the tests and install the binary:
 
-        govendor sync
-        govendor test -v -race
-        go install
+    ` go test -mod=readonly -race ./... `
+    ` ./resilent-splunk-forwarder `
+
 
 2. Run the binary (using the `help` flag to see the available optional arguments):
 
@@ -81,4 +77,9 @@ However, due to having multiple workers, this will not affect messages that are 
 
 ### Logging
 
-* The application uses [logrus](https://github.com/Sirupsen/logrus); the log file is initialised in [main.go](main.go).
+- The application uses [go-logger v2](https://github.com/Financial-Times/go-logger/tree/v2); the log file is initialised in [main.go](main.go).
+- Logging requires an `env` app parameter, for all environments other than `local` logs are written to file.
+- When running locally, logs are written to console. If you want to log locally to file, you need to pass in an env
+parameter that is != `local`.
+- NOTE: `/__build-info` and `/__gtg` endpoints are not logged as they are called every second from varnish/vulcand
+and this information is not needed in logs/splunk.
