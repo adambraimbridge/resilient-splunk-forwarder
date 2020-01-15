@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pborman/uuid"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pborman/uuid"
 )
 
 const maxKeys = int64(100)
@@ -62,8 +62,7 @@ var NewS3Service = func(bucketName string, awsRegion string, prefix string) (Cac
 			HTTPClient: hc,
 		})
 	if err != nil {
-		log.Fatalf("Failed to create AWS session: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("Failed to create AWS session: %v", err)
 	}
 	svc := s3.New(sess)
 	return &s3Service{bucketName: bucketName, prefix: prefix, svc: svc}, nil
