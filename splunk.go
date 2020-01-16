@@ -52,7 +52,7 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 
 	req, err := http.NewRequest("POST", splunk.config.fwdURL, strings.NewReader(s))
 	if err != nil {
-		splunk.config.UPPLogger.Println(err)
+		splunk.config.UPPLogger.Infof(err.Error())
 	}
 	tokenWithKeyword := strings.Join([]string{"Splunk", splunk.config.token}, " ") //join strings "Splunk" and value of -token argument
 	req.Header.Set("Authorization", tokenWithKeyword)
@@ -60,18 +60,18 @@ func (splunk *splunkClient) forward(s string, callback func(string, error)) {
 	r, err := splunk.client.Do(req)
 	if err != nil {
 		errorCounter.Inc()
-		splunk.config.UPPLogger.Println(err)
+		splunk.config.UPPLogger.Infof(err.Error())
 	} else {
 		defer r.Body.Close()
 		io.Copy(ioutil.Discard, r.Body)
 		if r.StatusCode != 200 {
 			errorCounter.Inc()
-			splunk.config.UPPLogger.Printf("Unexpected status code %v (%v) when sending %v to %v\n", r.StatusCode, r.Status, s, splunk.config.fwdURL)
+			splunk.config.UPPLogger.Infof("Unexpected status code %v (%v) when sending %v to %v\n", r.StatusCode, r.Status, s, splunk.config.fwdURL)
 			if r.StatusCode != 400 {
 				err = errors.New(r.Status)
 			} else {
 				discardedCounter.Inc()
-				splunk.config.UPPLogger.Printf("Discarding malformed message\n")
+				splunk.config.UPPLogger.Infof("Discarding malformed message\n")
 			}
 		}
 	}
