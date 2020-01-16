@@ -185,7 +185,7 @@ func initApp() *cli.Cli {
 				{
 					BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
 					Name:             "Splunk healthcheck",
-					PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+					:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 					Severity:         1,
 					TechnicalSummary: "Latest request to Splunk HEC has returned an error - check journal file",
 					Checker: func() (string, error) {
@@ -199,7 +199,7 @@ func initApp() *cli.Cli {
 				{
 					BusinessImpact:   "Logs can not be read from S3 and will probably be indexed with delay",
 					Name:             "S3 healthcheck",
-					PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+					PanicGuide:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 					Severity:         1,
 					TechnicalSummary: "Latest request to S3 has returned an error - check journal file",
 					Checker: func() (string, error) {

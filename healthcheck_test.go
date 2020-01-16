@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	health "github.com/Financial-Times/go-fthealth/v1_1"
-	"github.com/Financial-Times/service-status-go/httphandlers"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	health "github.com/Financial-Times/go-fthealth/v1_1"
+	"github.com/Financial-Times/service-status-go/httphandlers"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGTGUnhealthyCluster(t *testing.T) {
@@ -18,7 +19,7 @@ func TestGTGUnhealthyCluster(t *testing.T) {
 		{
 			BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
 			Name:             "Splunk healthcheck",
-			PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+			PanicGuide:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 			Severity:         1,
 			TechnicalSummary: "Latest request to Splunk HEC has returned an error - check journal file",
 			Checker: func() (string, error) {
@@ -53,7 +54,7 @@ func TestGTGHealthyCluster(t *testing.T) {
 		{
 			BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
 			Name:             "Splunk healthcheck",
-			PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+			PanicGuide:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 			Severity:         1,
 			TechnicalSummary: "Latest request to Splunk HEC has returned an error - check journal file",
 			Checker: func() (string, error) {
