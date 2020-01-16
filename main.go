@@ -119,12 +119,6 @@ func initApp() *cli.Cli {
 		Desc:   "AWS region for S3",
 		EnvVar: "AWS_REGION",
 	})
-	logLevel := app.String(cli.StringOpt{
-		Name:   "logLevel",
-		Value:  "INFO",
-		Desc:   "Logging level (DEBUG, INFO, WARN, ERROR)",
-		EnvVar: "LOG_LEVEL",
-	})
 
 	// these values are picked up by the aws sdk from the env vars
 	// they are only mentioned here for validation purposes
@@ -139,28 +133,36 @@ func initApp() *cli.Cli {
 		EnvVar: "AWS_SECRET_ACCESS_KEY",
 	})
 
-	config := appConfig{
-		appSystemCode: *appSystemCode,
-		appName:       *appName,
-		port:          *port,
-		fwdURL:        *fwdURL,
-		env:           *env,
-		workers:       *workers,
-		chanBuffer:    *chanBuffer,
-		token:         *token,
-		bucket:        *bucket,
-		awsRegion:     *awsRegion,
-		awsAccessKey:  *awsAccessKey,
-		awsSecretKey:  *awsSecretAccessKey,
-		UPPLogger:     logger.NewUPPLogger(*appSystemCode, *logLevel),
-	}
-
-	config.UPPLogger.Infof("[Startup] resilient-splunk-forwarder is starting ")
+	logLevel := app.String(cli.StringOpt{
+		Name:   "logLevel",
+		Value:  "INFO",
+		Desc:   "Logging level (DEBUG, INFO, WARN, ERROR, PANIC)",
+		EnvVar: "LOG_LEVEL",
+	})
 
 	app.Action = func() {
+		
+		config := appConfig{
+			appSystemCode: *appSystemCode,
+			appName:       *appName,
+			port:          *port,
+			fwdURL:        *fwdURL,
+			env:           *env,
+			workers:       *workers,
+			chanBuffer:    *chanBuffer,
+			token:         *token,
+			bucket:        *bucket,
+			awsRegion:     *awsRegion,
+			awsAccessKey:  *awsAccessKey,
+			awsSecretKey:  *awsSecretAccessKey,
+			UPPLogger:     logger.NewUPPLogger(*appSystemCode, *logLevel),
+		}
+
+		config.UPPLogger.Infof("[Startup] resilient-splunk-forwarder is starting ")
+
 		config.UPPLogger.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
 		validateParams(config)
-		defer config.UPPLogger.Printf("Resilient Splunk forwarder: Stopped\n")
+		defer config.UPPLogger.Infof("Resilient Splunk forwarder: Stopped\n")
 
 		s3, err := NewS3Service(config.bucket, config.awsRegion, config.env)
 		if err != nil {
@@ -183,7 +185,7 @@ func initApp() *cli.Cli {
 				{
 					BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
 					Name:             "Splunk healthcheck",
-					PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+					PanicGuide:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 					Severity:         1,
 					TechnicalSummary: "Latest request to Splunk HEC has returned an error - check journal file",
 					Checker: func() (string, error) {
@@ -197,7 +199,7 @@ func initApp() *cli.Cli {
 				{
 					BusinessImpact:   "Logs can not be read from S3 and will probably be indexed with delay",
 					Name:             "S3 healthcheck",
-					PanicGuide:       "https://dewey.ft.com/resilient-splunk-forwarder.html",
+					PanicGuide:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 					Severity:         1,
 					TechnicalSummary: "Latest request to S3 has returned an error - check journal file",
 					Checker: func() (string, error) {
@@ -215,7 +217,7 @@ func initApp() *cli.Cli {
 			serveEndpoints(healthService, *appSystemCode, *appName, *port, config.UPPLogger)
 		}()
 
-		config.UPPLogger.Printf("Resilient Splunk forwarder (workers %v): Started\n", workers)
+		config.UPPLogger.Infof("Resilient Splunk forwarder (workers %v): Started\n", workers)
 		waitForSignal()
 	}
 
