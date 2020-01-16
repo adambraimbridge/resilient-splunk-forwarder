@@ -185,7 +185,7 @@ func initApp() *cli.Cli {
 				{
 					BusinessImpact:   "Logs are not reaching Splunk therefore monitoring may be affected",
 					Name:             "Splunk healthcheck",
-					:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
+					PanicGuide:       "https://runbooks.in.ft.com/resilient-splunk-forwarder",
 					Severity:         1,
 					TechnicalSummary: "Latest request to Splunk HEC has returned an error - check journal file",
 					Checker: func() (string, error) {

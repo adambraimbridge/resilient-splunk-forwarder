@@ -39,7 +39,7 @@ Options:
           --awsRegion=""                                   AWS region for S3 ($AWS_REGION)
           --awsAccessKey=""                                AWS Access Key for S3 ($AWS_ACCESS_KEY_ID)
           --awsSecretAccessKey=""                          AWS secret access key for S3 ($AWS_SECRET_ACCESS_KEY)
-	  --logLevel="INFO"                                Logging level (DEBUG, INFO, WARN, ERROR, PANIC) ($LOG_LEVEL)
+          --logLevel="INFO"                                Logging level (DEBUG, INFO, WARN, ERROR, PANIC) ($LOG_LEVEL)
 
 3. Test:
 
