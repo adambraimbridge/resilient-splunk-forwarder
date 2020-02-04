@@ -76,7 +76,7 @@ func Test_failValidateParams(t *testing.T) {
 	err := validateParams(brokenConfig)
 
 	if err == nil {
-		t.Error("validaion for input parameters has failed")
+		t.Error("validation of the input parameters has failed")
 	}
 }
 
