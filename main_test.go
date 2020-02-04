@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/Financial-Times/go-logger/v2"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/Financial-Times/go-logger/v2"
 
 	"github.com/stretchr/testify/assert"
 
@@ -51,7 +51,6 @@ func TestMain(m *testing.M) {
 	os.Setenv("TOKEN", config.token)
 	os.Setenv("BUCKET_NAME", config.bucket)
 	os.Setenv("AWS_REGION", "eu")
-	os.Setenv("AWS_ACCESS_KEY_ID", "accessKey")
 	os.Setenv("FORWARDER_URL", config.fwdURL)
 
 	app := initApp()
@@ -66,25 +65,19 @@ func TestMain(m *testing.M) {
 func Test_successValidateParams(t *testing.T) {
 	validationConfig := config
 	validationConfig.fwdURL = "test-fwdURL"
-	validationConfig.awsSecretKey = "awsSecretKey"
-	validationConfig.awsAccessKey = "awsAccessKey"
 
 	validateParams(validationConfig)
 }
 
 func Test_failValidateParams(t *testing.T) {
+	brokenConfig := config
+	brokenConfig.fwdURL = ""
 
-	if os.Getenv("INVALID_CONFIG") == "1" {
-		validateParams(config)
-		return
+	err := validateParams(brokenConfig)
+
+	if err == nil {
+		t.Error("validaion for input parameters has failed")
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=Test_failValidateParams")
-	cmd.Env = append(os.Environ(), "INVALID_CONFIG=1")
-	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
-	}
-	t.Fatalf("Process ran with err %v, want exit status 1", err)
 }
 
 func Test_RegisterCounter(t *testing.T) {

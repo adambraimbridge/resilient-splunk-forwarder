@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/jawher/mow.cli"
+	cli "github.com/jawher/mow.cli"
 
 	health "github.com/Financial-Times/go-fthealth/v1_1"
 	"github.com/Financial-Times/go-logger/v2"
@@ -41,8 +42,6 @@ type appConfig struct {
 	token         string
 	bucket        string
 	awsRegion     string
-	awsAccessKey  string
-	awsSecretKey  string
 	UPPLogger     *logger.UPPLogger
 }
 
@@ -120,19 +119,6 @@ func initApp() *cli.Cli {
 		EnvVar: "AWS_REGION",
 	})
 
-	// these values are picked up by the aws sdk from the env vars
-	// they are only mentioned here for validation purposes
-	awsAccessKey := app.String(cli.StringOpt{
-		Name:   "awsAccessKey",
-		Desc:   "AWS Access Key for S3",
-		EnvVar: "AWS_ACCESS_KEY_ID",
-	})
-	awsSecretAccessKey := app.String(cli.StringOpt{
-		Name:   "awsSecretAccessKey",
-		Desc:   "AWS secret access key for S3",
-		EnvVar: "AWS_SECRET_ACCESS_KEY",
-	})
-
 	logLevel := app.String(cli.StringOpt{
 		Name:   "logLevel",
 		Value:  "INFO",
@@ -141,7 +127,7 @@ func initApp() *cli.Cli {
 	})
 
 	app.Action = func() {
-		
+
 		config := appConfig{
 			appSystemCode: *appSystemCode,
 			appName:       *appName,
@@ -153,15 +139,17 @@ func initApp() *cli.Cli {
 			token:         *token,
 			bucket:        *bucket,
 			awsRegion:     *awsRegion,
-			awsAccessKey:  *awsAccessKey,
-			awsSecretKey:  *awsSecretAccessKey,
 			UPPLogger:     logger.NewUPPLogger(*appSystemCode, *logLevel),
 		}
 
 		config.UPPLogger.Infof("[Startup] resilient-splunk-forwarder is starting ")
 
 		config.UPPLogger.Infof("System code: %s, App Name: %s, Port: %s", *appSystemCode, *appName, *port)
-		validateParams(config)
+		err := validateParams(config)
+		if err != nil {
+			config.UPPLogger.Fatal(err)
+		}
+
 		defer config.UPPLogger.Infof("Resilient Splunk forwarder: Stopped\n")
 
 		s3, err := NewS3Service(config.bucket, config.awsRegion, config.env)
@@ -271,20 +259,18 @@ func waitForSignal() {
 	<-ch
 }
 
-func validateParams(config appConfig) {
+func validateParams(config appConfig) error {
 	if len(config.fwdURL) == 0 { //Check whether -url parameter value was provided
-		config.UPPLogger.Fatalf("Forwarder URL must be provided\n")
+		return errors.New("forwarder URL must be provided")
 	}
 	if len(config.token) == 0 { //Check whether -token parameter value was provided
-		config.UPPLogger.Fatalf("Splunk token must be provided\n")
+		return errors.New("splunk token must be provided")
 	}
 	if len(config.bucket) == 0 { //Check whether -bucket parameter value was provided
-		config.UPPLogger.Fatalf("S3 bucket name must be provided\n")
-	}
-	if len(config.awsSecretKey) == 0 || len(config.awsAccessKey) == 0 {
-		config.UPPLogger.Fatalf("S3 is unreachable, access keys are not provided\n")
+		return errors.New("s3 bucket name must be provided")
 	}
 
+	return nil
 }
 
 func registerCounter(name, help string) prometheus.Counter {
