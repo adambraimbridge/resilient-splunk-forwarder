@@ -36,8 +36,6 @@ Options:
           --token=""                                       Splunk HEC Authorization token ($TOKEN)
           --bucketName=""                                  S3 bucket for caching failed events ($BUCKET_NAME)
           --awsRegion=""                                   AWS region for S3 ($AWS_REGION)
-          --awsAccessKey=""                                AWS Access Key for S3 ($AWS_ACCESS_KEY_ID)
-          --awsSecretAccessKey=""                          AWS secret access key for S3 ($AWS_SECRET_ACCESS_KEY)
           --logLevel="INFO"                                Logging level (DEBUG, INFO, WARN, ERROR, PANIC) ($LOG_LEVEL)
 
 3. Test:
@@ -74,8 +72,8 @@ Healthchecks incur no additional requests to external systems.
 
 There is a single thread listing objects from S3, but actual data is fetched asynchronously. Messages are immediately deleted from S3.
 Messages are then dispatched to a set of workers that submit the data to the configured Splunk HEC URL.
-Failed messages are stored again in S3. Failures also cause exponential backoff so that the endopint is not overwhelmed. 
-However, due to having multiple workers, this will not affect messages that are already dispatched.  
+Failed messages are stored again in S3. Failures also cause exponential backoff so that the endopint is not overwhelmed.
+However, due to having multiple workers, this will not affect messages that are already dispatched.
 
 ### Logging
 
