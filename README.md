@@ -19,7 +19,6 @@ Forwards logs cached in S3 to Splunk
         go test -mod=readonly -race ./...
         ./resilient-splunk-forwarder
 
-
 2. Run the binary (using the `help` flag to see the available optional arguments):
 
         $GOPATH/bin/resilient-splunk-forwarder [--help]
@@ -53,6 +52,7 @@ Options:
 The app has no service endpoints.
 
 ## Healthchecks
+
 Admin endpoints are:
 
 `/__gtg`
@@ -69,6 +69,7 @@ There are several checks performed:
 Healthchecks incur no additional requests to external systems.
 
 ## Other information
+
 There is a single thread listing objects from S3, but actual data is fetched asynchronously. Messages are immediately deleted from S3.
 Messages are then dispatched to a set of workers that submit the data to the configured Splunk HEC URL.
 Failed messages are stored again in S3. Failures also cause exponential backoff so that the endopint is not overwhelmed.
@@ -82,3 +83,7 @@ However, due to having multiple workers, this will not affect messages that are 
 parameter that is != `local`.
 - NOTE: `/__build-info` and `/__gtg` endpoints are not logged as they are called every second from varnish/vulcand
 and this information is not needed in logs/splunk.
+
+## Change/Rotate sealed secrets
+
+Please reffer to documentation in [pac-global-sealed-secrets-eks](https://github.com/Financial-Times/pac-global-sealed-secrets-eks/blob/master/README.md). Here are explained details how to create new, change existing sealed secrets.
