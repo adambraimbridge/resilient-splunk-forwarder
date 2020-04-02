@@ -14,10 +14,15 @@ spec:
       app: {{ .Values.service.name }}
   template:
     metadata:
+ {{- with .Values.annotations }}
+      annotations:
+ {{ toYaml . | indent 8 }}
+ {{- end }}
       labels:
         app: {{ .Values.service.name }}
         visualize: "true"
     spec:
+{{- if not .Values.eksCluster }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -28,6 +33,7 @@ spec:
                 values:
                 - {{ .Values.service.name }}
             topologyKey: "kubernetes.io/hostname"
+{{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
@@ -52,16 +58,6 @@ spec:
             configMapKeyRef:
               name: global-config
               key: environment
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: splunk-forwarder
-              key: aws.access_key_id
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: splunk-forwarder
-              key: aws.secret_access_key
         - name: FORWARD_URL
           valueFrom:
             secretKeyRef:
