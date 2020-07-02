@@ -136,7 +136,7 @@ NOTE: This will require Basic UPP Kubernetes authentication for Ops
 
 Available checks reveal the status of S3 and Splunk connectivity.  
 
-2. Check the [log collector](https://dewey.in.ft.com/view/system/log-collector#troubleshooting) for any issues in storing log messages in S3.
+2. Check the [log collector](https://biz-ops.in.ft.com/System/log-collector#troubleshooting) for any issues in storing log messages in S3.
 
 ## Second Line Troubleshooting
 
