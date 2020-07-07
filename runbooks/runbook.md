@@ -107,37 +107,17 @@ The service is not using AWS keys but IAM role to access the S3 bucket
 
 ## Monitoring
 
-Splunk logs:  
-[Logs from k8s PROD from the last hour](https://financialtimes.splunkcloud.com/en-US/app/financial_times_production/search?q=search%20index%3Dcontent_prod%20environment%3D%22upp-prod*%22&sid=1593615745.4269268&display.page.search.mode=verbose&dispatch.sample_ratio=1&earliest=-1h&latest=now)
-
-Check that each environment has ingested logs.  
-Grafana statistics:  
-<http://grafana.ft.com/dashboard/db/upp-k8s-resilient-splunk-forwarder-stats?orgId=1>
-
-Check for Requests/Sec rates and Splunk HEC (Http Event Collector) errors.  
-
-S3 prod bucket:  
-<https://s3.console.aws.amazon.com/s3/buckets/splunklogs-upp-prod/?region=eu-west-1&amp;tab=overview>   
-Each environment has its specific folder inside the bucket. These folders should not contain any data (or data size should continuously decrease) if the resilient-splunk-forwarder is successfully ingesting into Splunk.
+- https://upp-prod-publish-us.upp.ft.com/__health
+- https://upp-prod-publish-eu.upp.ft.com/__health
+- https://upp-prod-delivery-us.upp.ft.com/__health
+- https://upp-prod-delivery-eu.upp.ft.com/__health
+- https://pac-prod-eu.upp.ft.com/__health
+- https://pac-prod-us.upp.ft.com/__health
 
 ## First Line Troubleshooting
 
-1. Check the health of the service either on the [C&M Heimdall](https://heimdall.ftops.tech/dashboard?teamid=content) or by calling the __health endpoint.
-
-NOTE: This will require Basic UPP Kubernetes authentication for Ops
-
-<https://upp-prod-delivery-eu.upp.ft.com/__resilient-splunk-forwarder/__health>
-
-<https://upp-prod-delivery-eu.upp.ft.com/__resilient-splunk-forwarder/__health>
-
-<https://upp-prod-publish-us.upp.ft.com/__resilient-splunk-forwarder/__health>
-
-<https://upp-prod-publish-us.upp.ft.com/__resilient-splunk-forwarder/__health>
-
-Available checks reveal the status of S3 and Splunk connectivity.  
-
-2. Check the [log collector](https://biz-ops.in.ft.com/System/log-collector#troubleshooting) for any issues in storing log messages in S3.
+https://github.com/Financial-Times/upp-docs/tree/master/guides/ops/first-line-troubleshooting
 
 ## Second Line Troubleshooting
 
-Please refer to the GitHub repository README for troubleshooting information.
+Please refer to the https://github.com/Financial-Times/resilient-splunk-forwarder/blob/master/README.md for more troubleshooting information.
